@@ -94,6 +94,8 @@ body.list .card{max-width:none}
 .open{border:0;background:transparent;text-align:left;padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
 .cname{font-weight:800;font-size:1rem;line-height:1.2}
 .cwhy{font-size:.86rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tagline{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.idx{font-size:.68rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .tag{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
 .tag.d{color:var(--day)} .tag.n{color:var(--night)}
 .empty{color:var(--muted);margin-top:24px}
@@ -444,7 +446,7 @@ function cover(s,box){
   im.onerror=function(){im.remove();box.appendChild(h('div',{cls:'noimg',text:'Photo blocked by its site. Open the card for links.'}));};
   box.appendChild(im);
 }
-function renderCard(o){
+function renderCard(o,i,m){
   var s=o.s,card=h('article',{cls:'card'});
   var cv=h('div',{cls:'cover'});cover(s,cv);
   cv.appendChild(h('span',{cls:'pill',text:fmt(o.d)+' · '+walk(o.d)}));
@@ -452,7 +454,7 @@ function renderCard(o){
   sv.addEventListener('click',function(e){e.stopPropagation();toggleSave(s[0]);});
   cv.appendChild(sv);
   var op=h('button',{cls:'open',type:'button'},[
-    h('span',{cls:'tag '+s[5],text:s[5]==='n'?'Night':'Day'}),
+    h('span',{cls:'tagline'},[h('span',{cls:'tag '+s[5],text:s[5]==='n'?'Night':'Day'}),h('span',{cls:'idx','aria-label':'Item '+i+' of '+m,text:i+'/'+m})]),
     h('span',{cls:'cname',text:s[1]}),
     h('span',{cls:'cwhy',text:s[7]})]);
   op.addEventListener('click',function(){openSheet(s[0]);});
@@ -469,7 +471,7 @@ function renderOut(){
         h('div',{cls:'pmeta',text:g.items.length+(g.items.length===1?' spot':' spots')+' · '+nd+' day, '+nn+' night · nearest '+fmt(g.d)+', '+walk(g.d)+' walk'})]),
       mix]);
     var row=h('div',{cls:'row max'});
-    g.items.forEach(function(o){row.appendChild(renderCard(o));});
+    g.items.forEach(function(o,i){row.appendChild(renderCard(o,i+1,g.items.length));});
     out.appendChild(h('section',{cls:'pocket',id:'p-'+g.k},[head,row]));
   });
   if(!model.groups.length){
