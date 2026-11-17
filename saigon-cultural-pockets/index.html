@@ -43,6 +43,10 @@ h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:ba
 
 .mapcard{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .mapcard svg{display:block;width:100%;height:auto}
+#lmap{height:340px;width:100%;background:var(--surface);z-index:0}
+.pbadge{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 12px/1 inherit;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer}
+.leaflet-container{font:inherit}
+@media (prefers-color-scheme: dark){.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)}.leaflet-control-attribution{background:rgba(20,26,24,.75)!important;color:#b8c4be}.leaflet-control-attribution a{color:#d7e2dc}.leaflet-bar a{background:#1b2420;color:#e8efe9;border-color:#2c3833}}
 .maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 14px 12px;font-size:.78rem;color:var(--muted)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
@@ -125,6 +129,8 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 @media (prefers-reduced-motion:reduce){.fab.busy .ring{animation:none}}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <header class="hero pad max">
@@ -133,12 +139,13 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
   <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
   <div class="tiles" id="tiles"></div>
   <div class="mapcard">
-    <svg id="map" viewBox="0 0 360 250" role="img" aria-label="Sketch map of the pockets, numbered by distance from you"></svg>
+    <div id="lmap" role="application" aria-label="Map of the spots, pockets numbered by distance from you"></div>
+    <svg id="map" viewBox="0 0 360 250" role="img" aria-label="Sketch map of the pockets, numbered by distance from you" style="display:none"></svg>
     <div class="maplegend">
       <span><i class="dot" style="background:var(--day)"></i>day spot</span>
       <span><i class="dot" style="background:var(--night)"></i>night spot</span>
       <span><i class="dot" style="background:var(--lantern)"></i>you are here</span>
-      <span>Numbers rank pockets by distance. Tap one.</span>
+      <span>Numbers rank pockets by distance. Tap a number or a dot. Pinch to zoom.</span>
     </div>
   </div>
   <div id="status" role="status" aria-live="polite"></div>
@@ -368,8 +375,43 @@ function renderTiles(){
   t.appendChild(tile('After dark',(S.length-day)+' spots','bars, izakayas, baths',function(){setFilter('n');}));
 }
 
+var LM=null,LG=null,lastFit='';
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
 function renderMap(){
-  var svg=$('map'),NS='http://www.w3.org/2000/svg';svg.textContent='';
+  if(!window.L){renderSketch();return;}
+  if(!LM){
+    LM=L.map('lmap',{zoomControl:true,attributionControl:true,scrollWheelZoom:false});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(LM);
+    LG=L.layerGroup().addTo(LM);
+  }
+  LG.clearLayers();
+  var day=cssv('--day'),night=cssv('--night'),me=cssv('--lantern'),surf=cssv('--surface');
+  S.forEach(function(s){
+    var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]]));
+    var m=L.circleMarker([s[3],s[4]],{radius:6,color:surf,weight:1.5,fillColor:s[5]==='n'?night:day,fillOpacity:on?0.95:0.2,opacity:on?1:0.2});
+    m.bindTooltip(s[1]);m.on('click',function(){openSheet(s[0]);});m.addTo(LG);
+  });
+  model.order.forEach(function(o){
+    var ps=S.filter(function(s){return s[2]===o.k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
+    var ic=L.divIcon({className:'',html:'<span class="pbadge">'+model.rank[o.k]+'</span>',iconSize:[24,24],iconAnchor:[12,34]});
+    var mk=L.marker([a/ps.length,b/ps.length],{icon:ic,keyboard:true,title:'Pocket '+model.rank[o.k]+': '+CL[o.k],zIndexOffset:500});
+    mk.on('click',function(){jump(o.k);});mk.addTo(LG);
+  });
+  var showMe=hav(st.origin,[10.7765,106.7005])<6000;
+  if(showMe){
+    L.circleMarker(st.origin,{radius:14,stroke:false,fillColor:me,fillOpacity:0.25,interactive:false}).addTo(LG);
+    L.circleMarker(st.origin,{radius:7,color:'#fff',weight:2.5,fillColor:me,fillOpacity:1}).bindTooltip('You are here').addTo(LG);
+  }
+  var key=st.origin.join(',');
+  if(key!==lastFit){
+    lastFit=key;var pts=S.map(function(s){return [s[3],s[4]];});if(showMe)pts.push(st.origin);
+    LM.fitBounds(pts,{padding:[18,18]});
+  }
+  setTimeout(function(){LM.invalidateSize();},60);
+}
+
+function renderSketch(){
+  var svg=$('map');svg.style.display='block';$('lmap').style.display='none';var _x=0,NS='http://www.w3.org/2000/svg';svg.textContent='';
   var W=360,H=250,pad=22,pts=S.map(function(s){return [s[3],s[4]];});
   var showMe=hav(st.origin,[10.7765,106.7005])<2500;
   if(showMe)pts.push(st.origin);
