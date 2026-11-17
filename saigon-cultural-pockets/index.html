@@ -12,13 +12,13 @@
 /* Layout idea: summary and pocket map first, then one swipeable row of photo cards per pocket, nearest pocket on top; a bottom sheet holds the detail. */
 :root{
   --bg:#edf1ee; --surface:#ffffff; --ink:#13201b; --muted:#5b6a63; --line:#d3dcd6;
-  --lantern:#d8391f; --lantern-ink:#ffffff; --night:#3b3fa8; --day:#0f7a5a; --chip:#e1e8e3;
+  --lantern:#d8391f; --lantern-ink:#ffffff; --night:#3b3fa8; --host:#b0246e; --day:#0f7a5a; --chip:#e1e8e3;
   --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
   --r:16px;
 }
 @media (prefers-color-scheme: dark){
   :root{ --bg:#0e1513; --surface:#18211e; --ink:#eef4f0; --muted:#9aaba3; --line:#2b3833;
-         --lantern:#ff6a4d; --lantern-ink:#1a0c08; --night:#a9adff; --day:#63d9b0; --chip:#222d29; color-scheme:dark; }
+         --lantern:#ff6a4d; --lantern-ink:#1a0c08; --night:#a9adff; --host:#ff8ac6; --day:#63d9b0; --chip:#222d29; color-scheme:dark; }
 }
 *{box-sizing:border-box}
 html,body{margin:0}
@@ -55,7 +55,7 @@ h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:ba
 .sticky{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-top:18px}
 .controls{display:flex;gap:8px;align-items:center;padding-top:10px}
 .seg{display:flex;background:var(--chip);border-radius:999px;padding:3px;flex:1 1 auto;min-width:0}
-.seg button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 6px;font-weight:600;font-size:.88rem;color:var(--muted);white-space:nowrap}
+.seg button{flex:1;min-width:0;border:0;background:transparent;border-radius:999px;padding:8px 6px;font-weight:600;font-size:.88rem;color:var(--muted);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
 .iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-weight:600;font-size:.85rem;white-space:nowrap}
 .search{margin-top:8px}
@@ -97,7 +97,7 @@ body.list .card{max-width:none}
 .tagline{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .idx{font-size:.68rem;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
 .tag{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
-.tag.d{color:var(--day)} .tag.n{color:var(--night)}
+.tag.d{color:var(--day)} .tag.n{color:var(--night)} .tag.h{color:var(--host)}
 .empty{color:var(--muted);margin-top:24px}
 
 .fab{position:fixed;right:16px;bottom:18px;z-index:30;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:14px 20px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.28);display:flex;gap:8px;align-items:center}
@@ -136,7 +136,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 </head>
 <body>
 <header class="hero pad max">
-  <div class="kicker">District 1 · 75 spots · 12 walkable pockets</div>
+  <div class="kicker">District 1 · 85 spots · 12 walkable pockets + hostess scene</div>
   <h1>Saigon Funky Pockets</h1>
   <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
   <div class="tiles" id="tiles"></div>
@@ -145,6 +145,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
     <div class="maplegend">
       <span><i class="dot" style="background:var(--day)"></i>day spot</span>
       <span><i class="dot" style="background:var(--night)"></i>night spot</span>
+      <span><i class="dot" style="background:var(--host)"></i>hostess scene</span>
       <span><i class="dot" style="background:var(--lantern)"></i>you are here</span>
       <span>Numbers rank pockets by distance. Tap one.</span>
     </div>
@@ -170,6 +171,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
         <button type="button" data-f="all" aria-pressed="true">All</button>
         <button type="button" data-f="d" aria-pressed="false">Day</button>
         <button type="button" data-f="n" aria-pressed="false">Night</button>
+        <button type="button" data-f="h" aria-pressed="false">Hostess</button>
         <button type="button" data-f="saved" aria-pressed="false" id="segSaved">Saved</button>
       </div>
       <button class="iconbtn" id="viewBtn" type="button" aria-pressed="false">List view</button>
@@ -232,6 +234,7 @@ var CL={
  pdc:'Phó Đức Chính',
  ttd:'Tôn Thất Đạm',
  nt:'Nguyễn Trãi side',
+ hs:'Hostess and massage scene',
  solo:'Lonely ones'
 };
 // [id, name, cluster, lat, lng, d|n, address and hours, why go, evidence url, [[label,url],...]]
@@ -321,11 +324,22 @@ var S=[
 ['30','Nhà Chung Cafe','nt',10.77066,106.69170,'d','5th floor, 35 Nguyễn Văn Tráng · 8:00–22:00','Homey apartment cafe: take the garage lift, find the oval door.','https://vietcetera.com/en/ideas-for-a-weekend-coffee-date-step-inside-saigons-vintage-apartments',[['counter','https://mia.vn/media/uploads/blog-du-lich/chung-cu-35-nguyen-van-trang-nha-chung-cafe-1729730108.jpg'],['guests and cat','https://cdn-resize-img.vietcetera.com/_next/image?url=https%3A%2F%2Fimg.vietcetera.com%2Fuploads%2Fimages%2F07-dec-2024%2Ffacebook-image-2--1733542034033.jpg&q=80&w=768']]],
 ['41','The Craft House Original','nt',10.77095,106.69253,'d','3rd floor, 28 Nguyễn Trãi · 11:00–19:00','Handmade work by Vietnamese makers: ceramics, board games.','https://hivelife.com/shop-local-support-local/',[['shop interior','https://hivelife.com/wp-content/uploads/2018/01/Hive-Life-Craft-House-1-1024x427.jpg'],['shop sign','https://hivelife.com/wp-content/uploads/2018/01/The-Craft-House-Hive-Life-3.jpg']]],
 
-['13','Công Đoàn bird cafe','solo',10.7762,106.6921,'d','Across from Tao Đàn Park · about 6:00–9:30','Songbird owners hang cages and gossip. Best on weekends.','https://www.kathmanduandbeyond.com/?p=11645',[['terrace (old park site)','https://www.holidify.com/images/cmsuploads/compressed/32595648905_4b3216161d_b_20181211194133.jpg'],['hanging cages','https://www.holidify.com/images/cmsuploads/compressed/17172786873_7d9e4be6c2_b_20181211194317.jpg']]]
+['13','Công Đoàn bird cafe','solo',10.7762,106.6921,'d','Across from Tao Đàn Park · about 6:00–9:30','Songbird owners hang cages and gossip. Best on weekends.','https://www.kathmanduandbeyond.com/?p=11645',[['terrace (old park site)','https://www.holidify.com/images/cmsuploads/compressed/32595648905_4b3216161d_b_20181211194133.jpg'],['hanging cages','https://www.holidify.com/images/cmsuploads/compressed/17172786873_7d9e4be6c2_b_20181211194317.jpg']]],
+["H1", "Samurai Bar", "hs", 10.78042, 106.70489, "h", "15B/19 Lê Thánh Tôn · 19:00–01:30", "Hostess bar with karaoke and bilingual hostesses. Hostesses earn commission on the drinks you order.", "https://thesmartlocal.com/vietnam/saigon-japan-town/", [["framed paintings on the wall", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-SAMURAI-BAR-2.jpg"], ["sign reading SAMURAI BAR", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-SAMURAI-BAR-3.jpg"]]],
+["H2", "MIE Bar", "hs", 10.78118, 106.70558, "h", "Address unsettled: guide says 15B/51, map shows MIE Bar at 13/9 Lê Thánh Tôn · 19:00–02:00", "Larger than most hostess bars, with wine racks; pitched for business meetings. A map reviewer mentions a karaoke room.", "https://thesmartlocal.com/vietnam/saigon-japan-town/", [["staff in sailor uniform holding a bottle", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-MIE-BAR-1.jpg"], ["whisky bottle label, unclear", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-MIE-BAR-2.jpg"]]],
+["H3", "IDOL Bar", "hs", 10.77997, 106.7056, "h", "15B/64 Lê Thánh Tôn · 19:30–02:00", "Small hostess club; English and Japanese spoken. A map reviewer reports staff sipping from the glasses of guests and billing it as lady drinks. Watch your glass, check the bill.", "https://thesmartlocal.com/vietnam/saigon-japan-town/", [["sign reading IDOL", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-IDOL-BAR-1.jpg"], ["row of cocktails on the counter", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/bar-list-IDOL-BAR-2.jpg"]]],
+["H4", "Genki Spa", "hs", 10.77955, 106.7044, "h", "8A1D1 Thái Văn Lung, plus 8A/D5 and 15B4 Lê Thánh Tôn · 07:00–03:00, map says 24 hours", "Herbal ball, aromatherapy, foot and Thai massage; ear cleaning and hair wash package. Mixed reviews. One reviewer paid 350,000 VND for 60 minutes, no tip pressure.", "https://thesmartlocal.com/vietnam/saigon-japan-town/", [["massage on a bed", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/spa-list-GENKI-SPA-1.jpg"], ["foot massage room", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/spa-list-GENKI-SPA-2.jpg"]]],
+["H5", "Kirei Spa", "hs", 10.78085, 106.7053, "h", "15A/8 Lê Thánh Tôn · 10:00–01:00 · not found on the map, position approximate", "Small spa in the quiet residential lane: nails, massage, lashes, waxing. Confirm it still exists.", "https://thesmartlocal.com/vietnam/saigon-japan-town/", [["reception counter", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/spa-list-KIREI-SPA-1.jpg"], ["treatment room", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/spa-list-KIREI-SPA-2.jpg"]]],
+["H6", "The massage street", "hs", 10.7805, 106.70475, "h", "Lanes 15B Lê Thánh Tôn and 8A Thái Văn Lung · from about 17:30", "Women in áo dài call you in from the lane. Open shopfronts with price boards, about double the city norm. Some shops offer \"extras\"; map reviewers say it is unclear which are legitimate.", "https://www.ricemedia.co/?p=5130", [["women seated inside a shopfront at 15B7", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-8-1024x758.jpg"], ["massage price board", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-5-1024x596.jpg"]]],
+["H7", "The three bar types", "hs", 10.78, 106.7052, "h", "Lanes off Lê Thánh Tôn · evening", "Snack bars are for drinking with your own group. Girl bars seat you at a counter to talk with staff. Clubs are the upscale tier.", "https://vietnamguide.co.kr/en/blog/a-guide-to-ho-chi-minh-citys-japanese-street-le-thanh-ton-street/", [["neon-lit lane at night", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-2-1024x670.jpg"], ["two women on a swing in a shop window", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-18-1024x787.jpg"]]],
+["H8", "The bill", "hs", 10.78023, 106.7053, "h", "Any hostess bar · price board photographed at Sakura lounge, 15B/46 Lê Thánh Tôn", "One writer lists table 50,000, seating 200,000, peanuts 150,000, lady drink 250,000, beer 150,000 VND plus tax and service: about 850,000 VND for one drink. A 2020 board shows 600,000 per person and 360,000 per lady. Ask before you sit.", "https://vietnamguide.co.kr/en/blog/a-guide-to-ho-chi-minh-citys-japanese-street-le-thanh-ton-street/", [["lounge price board: charge, lady, beer", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/sakura-lounge-japan-town-scaled.jpg"], ["bar price board: counter and room charge", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/Japanese-Town-side-note-scaled.jpg"]]],
+["H9", "The gate", "hs", 10.77937, 106.7047, "h", "Lê Thánh Tôn entrance closes 22:00 · 8A Thái Văn Lung stays open all night", "After 10 p.m. there is one way in and out of the bar lanes.", "https://vietnamguide.co.kr/en/blog/a-guide-to-ho-chi-minh-citys-japanese-street-le-thanh-ton-street/", [["15B gate from the street", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-7-1024x709.jpg"], ["15A gate sign, text only", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/15A-LTT-gate-scaled.jpg"]]],
+["H10", "Members-only rooms", "hs", 10.7799, 106.7055, "h", "Not public · from about 19:30", "Closed-door venues where women pour sake for business clients. No public source names one: something to notice, not a place to book. No photo of such a room is public.", "https://www.ricemedia.co/?p=5130", [["lantern on a neon-lit wall", "https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-16-1024x622.jpg"], ["sign reading 日本町, unclear", "https://thesmartlocal.com/vietnam/wp-content/uploads/2020/12/Japan-Town-alley-by-night-3-scaled.jpg"]]]
 ];
 
 
-var CLS={home:'Home block',ltt26:'26 Lý Tự Trọng',past:'Pasteur alleys',lttw:'Lý Tự Trọng west',bt:'Bến Thành',hbt:'Hai Bà Trưng',lt:'Little Tokyo',dk:'Đồng Khởi',pdc:'Phó Đức Chính',ttd:'Tôn Thất Đạm',nt:'Nguyễn Trãi',solo:'Lonely ones'};
+var MODE={d:'Day',n:'Night',h:'Hostess scene'};
+var CLS={home:'Home block',ltt26:'26 Lý Tự Trọng',past:'Pasteur alleys',lttw:'Lý Tự Trọng west',bt:'Bến Thành',hbt:'Hai Bà Trưng',lt:'Little Tokyo',hs:'Hostess scene',dk:'Đồng Khởi',pdc:'Phó Đức Chính',ttd:'Tôn Thất Đạm',nt:'Nguyễn Trãi',solo:'Lonely ones'};
 var LS='saigon-pockets-v1';
 var st={origin:HOME,label:'your stay at 91 Nguyễn Du',f:'all',q:'',saved:{},list:false,located:false};
 try{var raw=JSON.parse(localStorage.getItem(LS)||'{}');if(raw.saved)st.saved=raw.saved;if(raw.list)st.list=true;}catch(e){}
@@ -351,6 +365,7 @@ function compute(){
     model.byId[s[0]]={s:s,d:d};
     if(st.f==='d'&&s[5]!=='d')return;
     if(st.f==='n'&&s[5]!=='n')return;
+    if(st.f==='h'&&s[5]!=='h')return;
     if(st.f==='saved'&&!st.saved[s[0]])return;
     if(q&&(s[1]+' '+s[6]+' '+s[7]+' '+CL[s[2]]).toLowerCase().indexOf(q)<0)return;
     (g[s[2]]=g[s[2]]||[]).push({s:s,d:d});
@@ -373,7 +388,7 @@ function renderTiles(){
   t.appendChild(tile('Nearest pocket',CLS[o.k],fmt(o.d)+' · '+walk(o.d)+' walk',function(){jump(o.k);}));
   t.appendChild(tile('Nearest spot',best.s[1],fmt(best.d)+' · '+walk(best.d)+' walk',function(){openSheet(best.s[0]);}));
   t.appendChild(tile('By daylight',day+' spots','cafes, shops, galleries',function(){setFilter('d');}));
-  t.appendChild(tile('After dark',(S.length-day)+' spots','bars, izakayas, baths',function(){setFilter('n');}));
+  t.appendChild(tile('After dark',S.filter(function(s){return s[5]==='n';}).length+' spots','bars, izakayas, baths',function(){setFilter('n');}));
 }
 
 var GM=null,GMO=null,gmFit='',gmRaf=0;
@@ -395,7 +410,7 @@ function renderMap(){
   function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
   S.forEach(function(s){
     var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]])),q=P(s[3],s[4]);
-    svg.appendChild(el('circle',{'class':'spot',cx:q[0].toFixed(1),cy:q[1].toFixed(1),r:3.2,fill:s[5]==='n'?'var(--night)':'var(--day)',opacity:on?0.85:0.15}));
+    svg.appendChild(el('circle',{'class':'spot',cx:q[0].toFixed(1),cy:q[1].toFixed(1),r:3.2,fill:s[5]==='n'?'var(--night)':(s[5]==='h'?'var(--host)':'var(--day)'),opacity:on?0.85:0.15}));
   });
   model.order.forEach(function(o){
     var ps=S.filter(function(s){return s[2]===o.k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
@@ -454,7 +469,7 @@ function renderCard(o,i,m){
   sv.addEventListener('click',function(e){e.stopPropagation();toggleSave(s[0]);});
   cv.appendChild(sv);
   var op=h('button',{cls:'open',type:'button'},[
-    h('span',{cls:'tagline'},[h('span',{cls:'tag '+s[5],text:s[5]==='n'?'Night':'Day'}),h('span',{cls:'idx','aria-label':'Item '+i+' of '+m,text:i+'/'+m})]),
+    h('span',{cls:'tagline'},[h('span',{cls:'tag '+s[5],text:MODE[s[5]]}),h('span',{cls:'idx','aria-label':'Item '+i+' of '+m,text:i+'/'+m})]),
     h('span',{cls:'cname',text:s[1]}),
     h('span',{cls:'cwhy',text:s[7]})]);
   op.addEventListener('click',function(){openSheet(s[0]);});
@@ -505,7 +520,7 @@ function openSheet(id){
     a.appendChild(im);a.appendChild(h('span',{text:p[0]}));gal.appendChild(a);
   });
   gal.scrollLeft=0;
-  $('sTag').className='tag '+s[5];$('sTag').textContent=(s[5]==='n'?'Night':'Day')+' · '+CL[s[2]];
+  $('sTag').className='tag '+s[5];$('sTag').textContent=MODE[s[5]]+' · '+CL[s[2]];
   $('sName').textContent=s[1];
   $('sDist').textContent=fmt(m.d);$('sWalk').textContent=walk(m.d);$('sPocket').textContent='No. '+model.rank[s[2]];
   $('sWhy').textContent=s[7];$('sAddr').textContent=s[6];
