@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Saigon Funky Pockets</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: summary and pocket map first, then one swipeable row of photo cards per pocket, nearest pocket on top; a bottom sheet holds the detail. */
+:root{
+  --bg:#edf1ee; --surface:#ffffff; --ink:#13201b; --muted:#5b6a63; --line:#d3dcd6;
+  --lantern:#d8391f; --lantern-ink:#ffffff; --night:#3b3fa8; --day:#0f7a5a; --chip:#e1e8e3;
+  --font:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0e1513; --surface:#18211e; --ink:#eef4f0; --muted:#9aaba3; --line:#2b3833;
+         --lantern:#ff6a4d; --lantern-ink:#1a0c08; --night:#a9adff; --day:#63d9b0; --chip:#222d29; color-scheme:dark; }
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.45;padding-bottom:96px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--lantern)}
+:focus-visible{outline:3px solid var(--night);outline-offset:2px;border-radius:6px}
+.pad{padding-left:16px;padding-right:16px}
+.max{max-width:1080px;margin:0 auto}
+
+header.hero{padding-top:20px}
+.kicker{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:balance;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:0;max-width:60ch}
+
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .lab{font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.tile .val{font-weight:800;font-size:1.02rem;line-height:1.2;overflow-wrap:anywhere}
+.tile .sub{font-size:.85rem;color:var(--lantern);font-weight:600;font-variant-numeric:tabular-nums}
+
+.mapcard{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.mapcard svg{display:block;width:100%;height:auto}
+.maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 14px 12px;font-size:.78rem;color:var(--muted)}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+.sticky{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);margin-top:18px}
+.controls{display:flex;gap:8px;align-items:center;padding-top:10px}
+.seg{display:flex;background:var(--chip);border-radius:999px;padding:3px;flex:1 1 auto;min-width:0}
+.seg button{flex:1;border:0;background:transparent;border-radius:999px;padding:8px 6px;font-weight:600;font-size:.88rem;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.18)}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 12px;font-weight:600;font-size:.85rem;white-space:nowrap}
+.search{margin-top:8px}
+.search input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;font-size:.84rem;font-weight:600;display:flex;gap:8px;align-items:center;text-decoration:none;color:var(--ink)}
+.chip .n{background:var(--ink);color:var(--bg);border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-variant-numeric:tabular-nums}
+.chip .m{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.chip.on{border-color:var(--lantern);box-shadow:inset 0 0 0 1px var(--lantern)}
+
+#status{font-size:.86rem;color:var(--muted);min-height:1.3em;margin-top:10px}
+details.manual{font-size:.9rem;margin-top:6px}
+details.manual summary{color:var(--muted);cursor:pointer}
+.mrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.mrow select,.mrow input{flex:1 1 170px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+
+section.pocket{margin-top:26px;scroll-margin-top:150px}
+.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.phead h2{margin:0;font-size:1.22rem;font-weight:800;line-height:1.15;text-wrap:balance}
+.phead .rank{color:var(--lantern);font-variant-numeric:tabular-nums}
+.pmeta{color:var(--muted);font-size:.86rem;margin-top:2px;font-variant-numeric:tabular-nums}
+.mix{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--chip);width:72px;flex:0 0 auto;margin-bottom:6px}
+.mix i{display:block;height:100%}
+.row{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 16px 6px;scroll-padding-left:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.row::-webkit-scrollbar{display:none}
+.card{flex:0 0 76%;max-width:300px;scroll-snap-align:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;text-align:left;padding:0;position:relative}
+body.list .row{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));overflow:visible}
+body.list .card{max-width:none}
+.cover{position:relative;aspect-ratio:4/3;background:var(--chip);overflow:hidden}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover .noimg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;font-size:.8rem;color:var(--muted)}
+.pill{position:absolute;left:8px;top:8px;background:rgba(10,16,14,.78);color:#fff;border-radius:999px;padding:4px 9px;font-size:.76rem;font-weight:600;font-variant-numeric:tabular-nums}
+.save{position:absolute;right:6px;top:6px;width:38px;height:38px;border-radius:50%;border:0;background:rgba(10,16,14,.6);color:#fff;font-size:1.1rem;line-height:1;display:flex;align-items:center;justify-content:center}
+.save[aria-pressed="true"]{background:var(--lantern);color:var(--lantern-ink)}
+.open{border:0;background:transparent;text-align:left;padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.cname{font-weight:800;font-size:1rem;line-height:1.2}
+.cwhy{font-size:.86rem;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tag{font-size:.7rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.tag.d{color:var(--day)} .tag.n{color:var(--night)}
+.empty{color:var(--muted);margin-top:24px}
+
+.fab{position:fixed;right:16px;bottom:18px;z-index:30;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:14px 20px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.28);display:flex;gap:8px;align-items:center}
+.fab .ring{width:12px;height:12px;border-radius:50%;border:3px solid currentColor}
+.fab.busy .ring{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.5);opacity:.4}}
+
+dialog#sheet{border:0;padding:0;background:var(--surface);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;border-radius:22px 22px 0 0;max-height:92dvh;overflow:auto}
+dialog#sheet::backdrop{background:rgba(5,10,8,.6)}
+@media (min-width:720px){dialog#sheet{margin:auto;border-radius:22px}}
+.grab{width:44px;height:5px;border-radius:99px;background:var(--line);margin:8px auto 6px}
+.gal{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:6px;padding:0 12px;scrollbar-width:none}
+.gal::-webkit-scrollbar{display:none}
+.gal a{flex:0 0 88%;scroll-snap-align:center;position:relative;aspect-ratio:4/3;border-radius:14px;overflow:hidden;background:var(--chip);display:block;text-decoration:none}
+.gal a:only-child{flex-basis:100%}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.gal span{position:absolute;left:0;right:0;bottom:0;padding:18px 10px 7px;color:#fff;font-size:.78rem;background:linear-gradient(transparent,rgba(0,0,0,.75))}
+.gal a.failed{display:flex;align-items:center;justify-content:center;padding:14px;text-align:center}
+.gal a.failed span{position:static;background:none;color:var(--muted)}
+.sbody{padding:14px 18px 20px;display:flex;flex-direction:column;gap:10px}
+.sbody h3{margin:0;font-size:1.4rem;font-weight:800;line-height:1.12;text-wrap:balance}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.fact{background:var(--chip);border-radius:12px;padding:8px 10px}
+.fact b{display:block;font-size:1rem;font-variant-numeric:tabular-nums}
+.fact span{font-size:.72rem;color:var(--muted)}
+.addr{color:var(--muted);font-size:.92rem}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.act{display:flex;align-items:center;justify-content:center;text-align:center;border-radius:12px;padding:12px 10px;font-weight:700;text-decoration:none;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.act.primary{background:var(--lantern);color:var(--lantern-ink);border-color:var(--lantern)}
+.act.wide{grid-column:1/-1}
+footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
+@media (min-width:720px){h1{font-size:2.6rem}.tiles{grid-template-columns:repeat(4,1fr)}.card{flex-basis:280px}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+@media (prefers-reduced-motion:reduce){.fab.busy .ring{animation:none}}
+</style>
+</head>
+<body>
+<header class="hero pad max">
+  <div class="kicker">District 1 · 75 spots · 12 walkable pockets</div>
+  <h1>Saigon Funky Pockets</h1>
+  <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
+  <div class="tiles" id="tiles"></div>
+  <div class="mapcard">
+    <svg id="map" viewBox="0 0 360 250" role="img" aria-label="Sketch map of the pockets, numbered by distance from you"></svg>
+    <div class="maplegend">
+      <span><i class="dot" style="background:var(--day)"></i>day spot</span>
+      <span><i class="dot" style="background:var(--night)"></i>night spot</span>
+      <span><i class="dot" style="background:var(--lantern)"></i>you are here</span>
+      <span>Numbers rank pockets by distance. Tap one.</span>
+    </div>
+  </div>
+  <div id="status" role="status" aria-live="polite"></div>
+  <details class="manual">
+    <summary>Location not working? Set your position by hand</summary>
+    <div class="mrow">
+      <select id="near" aria-label="I am near this pocket"></select>
+      <button class="iconbtn" id="useNear" type="button">Sort from this pocket</button>
+    </div>
+    <div class="mrow">
+      <input type="text" id="coords" inputmode="decimal" placeholder="Paste coordinates, e.g. 10.7773, 106.6985" aria-label="Coordinates">
+      <button class="iconbtn" id="useCoords" type="button">Sort from coordinates</button>
+    </div>
+  </details>
+</header>
+
+<div class="sticky">
+  <div class="pad max">
+    <div class="controls">
+      <div class="seg" role="group" aria-label="Filter spots">
+        <button type="button" data-f="all" aria-pressed="true">All</button>
+        <button type="button" data-f="d" aria-pressed="false">Day</button>
+        <button type="button" data-f="n" aria-pressed="false">Night</button>
+        <button type="button" data-f="saved" aria-pressed="false" id="segSaved">Saved</button>
+      </div>
+      <button class="iconbtn" id="viewBtn" type="button" aria-pressed="false">List view</button>
+    </div>
+    <div class="search"><input type="search" id="q" placeholder="Search a name, street or word like jazz, tea, ramen" aria-label="Search spots"></div>
+  </div>
+  <nav class="chips max" id="chips" aria-label="Jump to a pocket"></nav>
+</div>
+
+<main id="out"></main>
+
+<footer class="pad max">
+  Distances are straight lines; walking minutes add 30% and assume 75 m a minute. Two positions are approximate (bird cafe, Yossy Golf Bar).
+  Photos load from the sites that published them and were matched by machine descriptions, so a few may be loose fits. Check hours before you go.
+</footer>
+
+<button class="fab" id="locate" type="button"><span class="ring" aria-hidden="true"></span><span id="fabText">Sort by my location</span></button>
+
+<dialog id="sheet" aria-labelledby="sName">
+  <div class="grab" aria-hidden="true"></div>
+  <div class="gal" id="sGal"></div>
+  <div class="sbody">
+    <div class="tag" id="sTag"></div>
+    <h3 id="sName"></h3>
+    <div class="facts">
+      <div class="fact"><b id="sDist"></b><span>straight line</span></div>
+      <div class="fact"><b id="sWalk"></b><span>rough walk</span></div>
+      <div class="fact"><b id="sPocket"></b><span>pocket rank</span></div>
+    </div>
+    <div id="sWhy"></div>
+    <div class="addr" id="sAddr"></div>
+    <div class="acts">
+      <a class="act primary" id="sDir" target="_blank" rel="noopener noreferrer">Walking directions</a>
+      <a class="act" id="sRead" target="_blank" rel="noopener noreferrer">Read the write-up</a>
+      <button class="act" id="sSave" type="button">Save</button>
+      <button class="act" id="sClose" type="button">Close</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+var P={va:'https://www.vietnamairlines.com/content/dam/legacy-site-assets/SEO-images/2025%20SEO/Thay%20Anh%20Traffic%20Tieng%20Anh/coffee%20district%201/',
+rc:'https://www.rustycompass.com/uploads/destinations/',
+dot:'https://thedotmagazine.com/wp-content/uploads/',
+sl:'https://thesmartlocal.com/vietnam/wp-content/uploads/',
+sg:'https://media.urbanistnetwork.com/saigoneer/article-images/',
+fe:'https://feastio.com/wp-content/uploads/'};
+function U(s){var m=/^([a-z]+):(?!\/\/)(.*)$/.exec(s);return m&&P[m[1]]?P[m[1]]+m[2]:s;}
+
+var HOME=[10.77732,106.69857];
+var CL={
+ home:'Home block: Pasteur and Nguyễn Du',
+ ltt26:'26 Lý Tự Trọng block and Book Street',
+ past:'Pasteur alleys 63 and 144, Lê Lợi',
+ lttw:'Lý Tự Trọng west',
+ bt:'Bến Thành side',
+ hbt:'Hai Bà Trưng crossroads',
+ lt:'Little Tokyo',
+ dk:'Đồng Khởi and Nguyễn Huệ',
+ pdc:'Phó Đức Chính',
+ ttd:'Tôn Thất Đạm',
+ nt:'Nguyễn Trãi side',
+ solo:'Lonely ones'
+};
+// [id, name, cluster, lat, lng, d|n, address and hours, why go, evidence url, [[label,url],...]]
+var S=[
+['1','Inflow Cafe','home',10.77732,106.69857,'d','2nd floor, 91 Nguyễn Du · about 9:00–15:00, closed Mon','Tiny jazz-record cafe in your own building.','https://pinguide.city/district-1/places/inflow-cafe/',[['room 1','https://pinguide.city/wp-content/uploads/2026/07/inflow-cafe-irie-time-pinguide-1.webp'],['room 2','https://pinguide.city/wp-content/uploads/2026/07/inflow-cafe-irie-time-pinguide-2.webp']]],
+['2','XLIII Specialty Coffee','home',10.77819,106.69857,'d','178A Pasteur · opens 6:30','Pick-your-beans slow bar with guided tasting.','https://www.vietnamairlines.com/en/useful-information/travel-guide/coffee-district-1',[['pour-over','dot:2026/02/XLIII-Coffee-4.jpg'],['tasting beakers','va:high-quality-coffee-beans-are-meticulously-refined-to-create-a-bold-and-sophisticated-cup-of-coffee.png']]],
+['3','House of Merlin','home',10.77829,106.69866,'n','178/1 Pasteur · from 18:00','Steampunk cocktail bar down an alley, live band some nights.','https://amthuchiendai.vn/en/house-of-merlin-cocktails-rum-and-pizzas-with-a-steampunk-twist/',[['bar from above','https://amthuchiendai.vn/wp-content/uploads/2024/12/z6154764961383_6b1eb84ecdd06d66cc6591f926475d99.webp'],['main room','https://amthuchiendai.vn/wp-content/uploads/2024/12/z6154765052733_214fbe461e35ca1e737a5f9388e02984.webp']]],
+['31','Secret Garden','home',10.77708,106.69975,'d','Rooftop, 158 Pasteur · 11:00–22:00','Home-style Vietnamese food on the roof of an old walk-up.','https://vietcetera.com/en/secret-garden-restaurant-review',[['rooftop table','https://img.vietcetera.com/wp-content/uploads/2016/12/Secret-garden--768x432.jpg'],['dining area','https://wnfdiary.com/wp-content/uploads/2021/09/Secret-garden-restaurant-saigon-1.jpg']]],
+['15','Hoff Coffee Brewers','home',10.77716,106.70015,'d','1st floor, 42 bis Lý Tự Trọng · 7:30–21:00','Enter through a motorbike garage; balcony over the street.','https://www.vietnamairlines.com/en/useful-information/travel-guide/coffee-district-1',[['room','va:hoff-coffee-brewers-offers-a-neat-and-cool-space-that-s-not-overly-vibrant-creating-a-pleasant-and.png'],['drinks','va:the-creative-coffee-drinks-at-hoff-coffee-brewers-feel-like-a-boost-of-energy-for-the-entire-day.png']]],
+
+['4','26 Lý Tự Trọng apartment block','ltt26',10.77816,106.70105,'d','26 Lý Tự Trọng','Colonial block with boutiques and cafes on every floor.','https://mazevietnam.com/?p=4388',[['ornate staircase','sl:2022/01/26-ltt-lift.jpg'],['inside the block','sl:2022/01/26-ltt-3-1.jpg']]],
+['17','Vintage floors and The New Playground','ltt26',10.77816,106.70105,'d','26 Lý Tự Trọng, floors 2–4 · 10:00–20:00','Vintage Hearts 90s, Đậu Đỏ Vintage, and a basement streetwear mall next door.','https://www.saigoneer.com/saigon-culture/26511-on-the-hunt-for-one-of-a-kind-treasures-in-saigon-s-thriving-thrift-shops',[['building front with shop sign','sg:2023/09/15/thrift/VintageHearts07b.jpg'],['style shot','sg:2023/09/15/thrift/VintageHearts01b.jpg']]],
+['32','Mão A Chai','ltt26',10.77823,106.70110,'d','Top floor, 26 Lý Tự Trọng · 7:30–22:00','Tea-only room with masala chai and two cats.','https://saigoneer.com/saigon-street-food-restaurants/28119-hẻm-gems-at-mão-a-chai,-masala-chai-and-thái-nguyên-tea-for-the-soul',[['earthy room','sg:2025/04/22/mao/22b.jpg'],['resident cat','sg:2025/04/22/mao/10b.jpg']]],
+['33','Saigon Hidden Attic Tearoom','ltt26',10.77817,106.70113,'d','26 Lý Tự Trọng · bookable sessions','Vietnamese tea ritual in an old flat: smell the jars, pick one.','https://www.seeksophie.com/experiences/ho-chi-minh-city-hidden-saigon-tearoom-vietnamese-tea-ritual-omwjy6qr5l',[['lounge','https://d18sx48tl6nre5.cloudfront.net/watermark_af0a94a0f7e491e8110e87b979b037e9.webp'],['host pouring','https://d18sx48tl6nre5.cloudfront.net/watermark_0f97bd45c0e70a85187eeca23a1e134d.webp']]],
+['N17','Hybrid Saigon','ltt26',10.77919,106.70046,'n','Above Bar 57, 57 Nguyễn Du · 17:00–01:00','Through another bar and upstairs; experimental drinks, cathedral view.','https://thedotmagazine.com/the-best-cocktail-bars-in-ho-chi-minh-city/',[['drink being made','dot:2024/04/Hybrid-Cocktail-bar.jpg'],['the team','dot:2024/04/Hybrid-.jpg']]],
+['11','Book Street','ltt26',10.78096,106.70007,'d','Nguyễn Văn Bình · 8:00–21:00','100 m pedestrian lane of bookstalls and cafes by the Post Office.','https://localvietnam.com/ho-chi-minh-city/ho-chi-minh-city-book-street/',[['bookstalls under the canopy','https://static.vinwonders.com/production/Ho-Chi-Minh-City-Book-Street-2.jpg'],['book cafe','https://static.vinwonders.com/production/Ho-Chi-Minh-City-Book-Street-4.jpg']]],
+
+['7','The Old Compass Cafe','past',10.77490,106.70058,'d','3rd floor, 63/11 Pasteur · 9:00–22:00','Cafe, bar and cultural room in a 1960s flat.','https://vietcetera.com/the-old-compass-cafe-review',[['the room','rc:old-compass-cafe-1118b-00005_15425987243.jpg'],['books and guests','rc:old-compass-cafe-1118b-00009_15425987249.jpg']]],
+['8','Phở Minh','past',10.77481,106.70028,'d','63/6 Pasteur · 6:30–10:30','Phở house running since 1945 in the same alley.','https://www.rustycompass.com/vietnam-travel-guide-233/ho-chi-minh-city-4/eating-16/breakfast-in-saigon-our-picks-1454',[['shopfront','https://www.rustycompass.com/images/rustycompass/VIETNAM/SAIGON/SAIGONEATING0411/2016EATINGSAIGON/Pho_Minh_Saigon_1016-00004.jpg'],['bowl of phở','rc:pho-minh-saigon-1016-00003_14833717607.jpg']]],
+['9','Hmm. bar','past',10.77520,106.70045,'n','63/18 Pasteur, upstairs by lift · from 18:00','No-menu bar: drinks built from the card you fill in.','https://thatch.co/guide/1tapoc86oyijf/view',[['bartender at work','https://cdn.sanity.io/images/rcpgjktd/production/5914fe3f539f80221e36284027cd30155151d618-1216x1526.jpg'],['bar','https://cdn.enprimeurclub.com/storage/v1/object/public/images/bars/523e34a5-91ce-4a65-bd8f-d82cbba9ed37/hero1.jpg?width=1200&quality=85']]],
+['10','The Alley Cocktail Bar','past',10.77482,106.70062,'n','Alley 63 Pasteur · from 17:00, closed Sun','Small bar behind a gap in the wall, Mekong-flavoured cocktails.','https://theculturetrip.com/asia/vietnam/ho-chi-minh-city/articles/the-best-cocktail-bars-in-ho-chi-minh-city-vietnam',[['the bar','rc:the-alley-cocktails-saigon-0717-0001_14991683663.jpg'],['bartender','rc:the-alley-cocktails-saigon-0717-0003_14991683669.jpg']]],
+['19','Pasteur Street Brewing Co.','past',10.77518,106.70103,'n','144/3 Pasteur · 11:00–23:00','Where Saigon craft beer started, inside a covered lane.','https://thecitylane.com/?p=26763',[['long bar','https://thecitylane.com/wp-content/uploads/2017/08/IMG_0559.jpg'],['tasting flight','https://thecitylane.com/wp-content/uploads/2017/08/IMG_0389.jpg']]],
+['20','Oaksip Whisky & Cocktails','past',10.77526,106.70096,'n','1st floor, 144/2 Pasteur · 19:00–01:00','Wood-panelled whisky bar upstairs in the same lane.','https://epicurevietnam.com/bars-clubs-1/saigon-1/sophistication-on-the-tip-of-the-tongue',[['counter and back bar','https://oaksipbar.com/wp-content/uploads/2026/05/oaksip-whisky-cocktail-bar-ho-chi-minh-city-1024x576.jpg'],['two drinks','https://epicurevietnam.com/Data/Sites/1/media/bar_club/othercities/23/477238755_122147666612376981_6314739470638819361_n.jpg']]],
+['18','Naii Specialty Coffee','past',10.77456,106.70020,'d','Alley 36 Lê Lợi · 8:00–17:00','Roaster in a quiet courtyard under a big tree.','https://www.baristamagazine.com/these-beautiful-cafes-in-saigon-are-worth-a-visit/',[['shopfront','https://www.baristamagazine.com/wp-content/uploads/2024/02/naii-@-tanya-nanetti-550x413.webp'],['blue door','https://www.rustycompass.com/images/rustycompass/VIETNAM/SAIGON/SAIGONEATING0411/2025Eating/NaiiCafe022516x9%201%20of%201.jpg']]],
+['35','Ghé Coffee','past',10.77491,106.70124,'d','16 Lê Lợi, upstairs · 7:00–18:00','Tiny room hung with Vietnamese paintings.','https://www.saigoneer.com/saigon-street-food-restaurants/27197-hẻm-gems-the-ghé-coffee-tucks-art,-fragrant-coffee-into-a-quiet-d1-crevice',[['art-hung room','va:ghe-coffee-feels-like-a-miniature-art-gallery-showcasing-countless-unique-and-captivating-artworks.png'],['drinks','va:ghe-coffee-serves-specialty-coffee-meticulously-selecting-its-beans-with-a-strong-focus-on-flavor.png']]],
+
+['5','Summer Experiment','lttw',10.77459,106.69801,'n','2nd floor, 77–79 Lý Tự Trọng · from 16:00','Garden-to-glass experimental cocktails, hidden upstairs.','https://feastio.com/best-bars-saigon/',[['the bar','fe:2023/09/Summer-Experiment-bar.jpg'],['a cocktail','fe:2023/09/Summer-Experiment-cocktail.jpg']]],
+['34','CỘI Saigon','lttw',10.77458,106.69804,'n','77–79 Lý Tự Trọng · cafe by day, band from 21:00','Live band room up a scruffy staircase. Book ahead.','https://wanderlog.com/place/details/6031310',[['stage and room','https://itin-dev.wanderlogstatic.com/freeImage/ab8qNbXNoNytts0RccsPdeWFRDYn8xQE'],['corner table','https://itin-dev.wanderlogstatic.com/freeImage/IpvjN1Dt0XGn3Cv2lj3u5Eqcp6HH6RzR']]],
+['6','Tonkin Specialty Coffee','lttw',10.77439,106.69789,'d','91 Lý Tự Trọng, upstairs · 8:00–21:00','Egg coffee and a street balcony above a narrow passage.','https://www.vietnamairlines.com/en/useful-information/travel-guide/coffee-district-1',[['interior','va:tonkin-specialty-coffee-space-is-not-too-large-but-very-airy-and-cool.png'],['drinks and croissant','va:egg-cream-coffee-is-a-favorite-drink-among-many-loyal-customers-at-tonkin-specialty-coffee.png']]],
+['16','Tamarind (Me Bar)','lttw',10.77486,106.69802,'n','2nd floor, 33 Nguyễn Trung Trực · from 17:00','Speakeasy up a narrow stairwell; live music some nights.','https://thesmartlocal.com/vietnam/saigon-bars-and-pubs/',[['crowded bar','sl:2020/11/8-Tamarind-Hidden-Bar-2-1.jpg'],['a cocktail','sl:2020/11/8-Tamarind-Hidden-Bar-3.jpg']]],
+
+['21','Vintage Maintwo','bt',10.77370,106.69569,'d','156/4b Lý Tự Trọng · 10:00–21:00','Two floors of curated streetwear vintage down an alley.','https://saigon-scene.com/vintage-thrift-shops-in-saigon/',[['shopfront','https://saigon-scene.com/wp-content/uploads/2026/09/vintage-maintwo.jpg.webp'],['clothes rack','https://pinguide.city/wp-content/uploads/2026/07/vintage-maintwo-gareth-in-asia-pinguide-2.webp']]],
+['22','Sipply Specialty Coffee','bt',10.77288,106.69687,'d','1st floor, 200 Lê Thánh Tôn · 7:30–22:00','Small upstairs roaster bar; baristas walk you through beans.','https://www.klook.com/blog/ho-chi-minh-coffee',[['seating (branch not confirmed)','https://images.adsttc.com/media/images/65b8/1f3d/87f3/9321/fa98/f237/medium_jpg/sipply-coffee-sgnha_10.jpg?1706565457'],['brew counter','https://images.adsttc.com/media/images/65b8/1f3f/87f3/9354/2790/80b2/medium_jpg/sipply-coffee-sgnha_4.jpg?1706565477']]],
+['23','Soo Kafe','bt',10.77241,106.69721,'d','2nd floor, 35 Phan Chu Trinh · 8:00–23:00','Book-lined cafe with a balcony over Bến Thành Market.','https://feastio.com/best-cafes-saigon/',[['coffee and bookshelf','fe:2023/03/Vietnamese-coffee-Soo-Kafe.jpg'],['drinks and cake','fe:2023/03/Soo-Kafe-drinks-and-cake.jpg']]],
+
+['36','Snack alley','hbt',10.77893,106.70272,'d','76 Hai Bà Trưng · 15:00–21:00','Ten-metre alley of street-food stalls. Cramped by design.','https://jackfruitadventure.com/discover-street-food-alleyway-hai-ba-trung',[['stalls','https://jackfruitadventure.com/wp-content/uploads/2024/07/DSC08433-1024x576.jpg'],['alley mouth','https://jackfruitadventure.com/wp-content/uploads/2024/07/Hem-76-Hai-Ba-Trung-02-e1603775177834.jpg']]],
+['37','Heart of Darkness Craft Brewery','hbt',10.77981,106.70293,'n','31D Lý Tự Trọng · 11:00–00:00','Moody taproom with a long tap list and tasting paddles.','https://rustycompass.com/vietnam-travel-guide-233/ho-chi-minh-city-4/nightlife-17/heart-of-darkness-brewery-saigon-1412',[['bar','rc:heart-of-darkness-craft-brewery-saigon-0418-2-of-8_15244052050.jpg'],['tap signs','rc:heart-of-darkness-craft-brewery-saigon-0418-7-of-8_15244052050.jpg']]],
+['N15','Dot Bar','hbt',10.77924,106.70236,'n','1st floor, 37 Lý Tự Trọng · 17:00–01:30 · one source lists a move to 75 Hai Bà Trưng','Vietnamese-flavoured cocktails, pool table, old arcade machines.','https://thedotmagazine.com/the-best-cocktail-bars-in-ho-chi-minh-city/',[['Stay True neon','dot:2024/04/409032223_919397616862225_3907083327543773089_n-edited.jpg'],['áo dài figure','https://cdn.tatlerasia.com/tatlerasia/i/2025/08/21122340-picture1_cover_1200x1600.jpg']]],
+['N16','A Good Bar','hbt',10.77924,106.70231,'n','39 Lý Tự Trọng · 17:30–01:00','DJs, disco balls and neon above the crossroads.','https://thedotmagazine.com/the-best-cocktail-bars-in-ho-chi-minh-city/',[['neon room','dot:2024/04/A-GOODY-BAR.jpg'],['cocktail','dot:2024/04/A-good-bar.jpg']]],
+
+['X1','The gates and lantern lanes','lt',10.77937,106.70470,'n','8A Thái Văn Lung and alley 15B Lê Thánh Tôn · lanterns from dusk','One step off a Saigon street into a Tokyo back lane.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['15B gate from the street','https://www.ricemedia.co/wp-content/uploads/2017/05/Little-Tokyo-Saigon-Rice-Media-7-1024x709.jpg'],['alley at night','sl:2020/12/Japan-Town-alley-by-night-1-scaled.jpg']]],
+['X2','Azumaya rooftop bath and sauna','lt',10.77952,106.70448,'n','8A/7D1 Thái Văn Lung · evening, last order 22:45','Open-air Japanese bath on a business-hotel roof.','https://www.hafh.com/properties/2319',[['bath spout and bamboo fence','https://images.trvl-media.com/lodging/112000000/111120000/111113700/111113605/24fcb1c6.jpg?impolicy=resizecrop&rw=598&ra=fit'],['hotel entrance','https://storage.googleapis.com/hafh-prod-property_image/o7q5ropvnzpi43k11yjnyzm4xzxq']]],
+['X3','Ashikata Honpo shiatsu house','lt',10.77968,106.70423,'n','8A/2D1 Thái Văn Lung · 10:00–00:00','Japanese-run shiatsu with lockers and curtained bays.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['entrance','sl:2020/12/spa-list-ashikata-1-2.jpg'],['herbal compress tray','sl:2020/12/spa-list-ashikata-1-1.jpg']]],
+['X4','Izakaya Kunoichi','lt',10.77972,106.70461,'n','8A/3B2 Thái Văn Lung · 17:00–21:00, closed Sun','Ninja-themed izakaya with a dartboard. Closes early.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['group inside','sl:2020/12/eat-list-IZAKAYA-KUNOICHI-1.jpg'],['dartboard wall','sl:2020/12/eat-list-IZAKAYA-KUNOICHI-2.jpg']]],
+['X11','Daiichi Ramen & Curry','lt',10.77972,106.70456,'n','8A/2B2 Thái Văn Lung · 10:00–01:00','Shrine-style front hung with red lanterns.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['lantern front','sl:2020/12/eat-list-DAICHII-RAMEN-CURRY-1.jpg'],['inside','sl:2022/04/daiichi-ramen.jpg']]],
+['N6','Izakaya Ten','lt',10.77941,106.70455,'n','8A/8D1 Thái Văn Lung · 17:00–03:00','Loud Tokyo-style drinking hall, open since 2011.','https://thedotmagazine.com/?p=24126',[['street front sign','https://image.vietnamnews.vn/uploadvnnews/Article/2023/2/23/266418_Izakaya.jpg'],['counter with menu slips','dot:2024/03/Izakaya-Ten.jpg']]],
+['N1','The First Bar','lt',10.77962,106.70472,'n','8A/7B2 Thái Văn Lung · 17:00–01:00, closed Sun','Bow-tied bartenders, wooden counter, serious Martinis.','https://thedotmagazine.com/12-of-the-best-new-places-to-eat-and-drink-in-saigon-right-now/',[['wooden counter','dot:2019/08/First-1-1-1024x765.jpg'],['bartender','dot:2019/08/The-First-1024x683.jpg']]],
+['N7','Torisho','lt',10.77970,106.70496,'n','8A/11B1 Thái Văn Lung · 17:00–00:00, closed Sun','Corner yakitori joint; sit at the downstairs counter.','https://thedotmagazine.com/?p=24126',[['lantern front','https://i0.wp.com/urbansesame.com/wp-content/uploads/2022/06/Saigon-Little-Japan-Tokyo-Town-%E2%80%93-Torisho-Izakaya.jpg?resize=1024%2C472&ssl=1'],['group toasting upstairs','dot:2024/03/Torisho.jpg']]],
+['N11','Tokyo Moon Cafe Noir','lt',10.77954,106.70495,'n','8A/1C2 Thái Văn Lung','Tiny dessert cafe run by an older Korean couple.','https://saigoneer.com/saigon-street-food-restaurants/26992-hẻm-gems-tokyo-moon-cafe-introduces-homey-korean-flavors-to-japan-town',[['corner shopfront','sg:2024/04/23/TokyoMoon/06b.jpg'],['owners at the counter','sg:2024/04/23/TokyoMoon/10b.jpg']]],
+['X10','Hostess culture: Yossy Golf Bar','lt',10.7797,106.7052,'n','8A/H3 Thái Văn Lung · from about 19:00','Indoor golf simulator inside a hostess bar. Ask prices first.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['golf simulator','sl:2020/12/bar-list-YOSSY-GOLF-BAR-2.jpg'],['bar shelf','sl:2020/12/bar-list-YOSSY-GOLF-BAR-1.jpg']]],
+['X8','Jammin darts bar','lt',10.77951,106.70534,'n','8A/A19 Thái Văn Lung · 18:00–02:00','Japanese electronic darts on a coin system.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['dart machines','sl:2020/12/bar-list-DARTS-BAR-JAMMIN-SAIGON-3.jpg'],['bar counter','sl:2020/12/bar-list-DARTS-BAR-JAMMIN-SAIGON-1.jpg']]],
+['N8','Sakaba Sasuke','lt',10.77950,106.70550,'n','8A/A22 Thái Văn Lung · 17:30–23:00, closed Sun','Noren-curtained izakaya with daily skewer sets.','https://saigoneer.com/saigon-street-food-restaurants/27055-hẻm-gems-at-sakaba-sasuke-izakaya,-happiness-is-wrapped-in-pork-belly-and-grilled',[['noren entrance','sg:2024/05/17/izakaya/02b.jpg'],['table of dishes','sg:2024/05/17/izakaya/18b.jpg']]],
+['N12','Tori Soba Mutahiro','lt',10.77937,106.70553,'n','8A/G8b Thái Văn Lung · 17:00–02:00','Chicken-broth ramen: the late bowl after the bars.','https://saigoneer.com/saigon-street-food-restaurants/13039-hẻm-gems-mutahiro-s-masterful-chicken-ramen',[['ramen bowl','sg:legacy/47o0FuDb.jpg'],['tsukemen','sl:2020/12/eat-list-Tori-Soba-Mutahiro-3.jpg']]],
+['N9','Hanakaruta','lt',10.77991,106.70450,'n','Alley off Lê Thánh Tôn · evenings','Dive bar crossed with an izakaya; snug room downstairs.','https://thedotmagazine.com/five-places-to-drink-sake-in-saigon-on-world-sake-day-2022/',[['downstairs room','dot:2022/10/16406598_180269989123047_8355529727147362592_n-edited.jpg'],['small plate','dot:2022/10/ZivD4-scaled.jpeg']]],
+['N13','Kushi Katsu Ebisu Shoten','lt',10.77999,106.70397,'n','12–14 Thái Văn Lung · 11:00–03:30','Osaka-style fried skewers in a fairground-like room.','https://thedotmagazine.com/?p=24126',[['shopfront signs','dot:2024/03/Ebisu-Shoten.jpg'],['table of dishes','https://itin-dev.wanderlogstatic.com/freeImage/wSWwLZHBwB9Zk3bc7PlkBb6vimdoYQDL']]],
+['X6','Akuruhi supermarket cut-through','lt',10.78018,106.70454,'n','17A2 Lê Thánh Tôn · 8:00–22:00','Enter a Japanese grocery from the road, exit into a hidden lane.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['shelves','sl:2020/12/Japanese-marts-Akuruhi-3-scaled.jpg'],['store','sl:2020/12/Japanese-marts-Akuruhi-1-scaled.jpg']]],
+['N10','7 Bridges Taproom','lt',10.78024,106.70466,'n','15B/12 Lê Thánh Tôn · 12:00–02:00','Multi-level craft-beer house at the alley mouth.','https://thecitylane.com/7-bridges-brewing-co-le-thanh-ton-district-1/',[['lantern lane from the taproom','https://thecitylane.com/wp-content/uploads/2025/03/X1002657.jpg'],['counter','https://thecitylane.com/wp-content/uploads/2025/03/X1002654.jpg']]],
+['N4','Sushi Tiger','lt',10.78024,106.70477,'n','15B/12A Lê Thánh Tôn · 17:00–02:00, closed Mon','Standing-only sushi bar with beer crates for tables.','https://thedotmagazine.com/?p=11356',[['yellow shopfront','dot:2021/12/DSC03284.jpg'],['tiger curtain','dot:2021/12/DSC03295.jpg']]],
+['X7','Blues Bar','lt',10.78029,106.70479,'n','15B/14 Lê Thánh Tôn · from about 19:00','Japanese whisky under a blues soundtrack.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['shopfront sign','sl:2020/12/bar-list-BLUES-BAR-1-scaled.jpg'],['counter','sl:2020/12/bar-list-BLUES-BAR-3.jpg']]],
+['X5','Okonomiyaki Shu','lt',10.78031,106.70471,'n','15B11 Lê Thánh Tôn · 10:00–02:00','Pancakes and takoyaki griddled at the doorway.','https://thesmartlocal.com/vietnam/saigon-japan-town/',[['room with bookshelves','sl:2020/12/eat-list-OKONOMIYAKI-SHU-2.jpg'],['okonomiyaki','sl:2020/12/eat-list-OKONOMIYAKI-SHU.jpg']]],
+['N2','Bar Mitsuboshi','lt',10.78034,106.70481,'n','1st floor, 15B/16 Lê Thánh Tôn · 19:00–23:00, closed Sun','Through a beef-bowl shop and up the stairs: shochu and whisky.','https://saigoneer.com/saigon-street-food-restaurants/28835-hẻm-gems-atop-a-beef-bowl-eatery,-the-hidden-cozy-world-of-shochu-bar-mitsuboshi',[['counter','sg:2026/03/29/bar/12b.jpg'],['stairs to the door','sg:2026/03/29/bar/14b.jpg']]],
+['N14','Yakiuo Ishikawa','lt',10.78033,106.70363,'n','38 Thái Văn Lung · 18:00–22:00','Charcoal-grilled fish cooked at your table. Pricey.','https://thedotmagazine.com/?p=24126',[['chef serving','dot:2025/02/Yakiuo--e1739440255134.jpg'],['dishes','dot:2025/02/Yakiuo-Ishikawa-2-e1739440319947.jpg']]],
+['N5','Mangetsu','lt',10.78075,106.70497,'n','15/3 Lê Thánh Tôn · 18:00–02:00','Rowdy basement izakaya down a flight of stairs. Book ahead.','https://thedotmagazine.com/?p=24126',[['staff behind the bar','https://i0.wp.com/urbansesame.com/wp-content/uploads/2022/06/Saigon-Little-Japan-Tokyo-Town-%E2%80%93-Mangetsu-Shochu-Bar.jpg?resize=1024%2C473&ssl=1'],['sake bottles','dot:2024/03/Mangestu.jpg']]],
+['X9','AI Bar by Jennie','lt',10.78070,106.70542,'n','15A/1A2 Lê Thánh Tôn · 19:30–01:00','Neon counter bar with karaoke and card games; upfront prices.','https://en.gurutto-vietnam.com/detail/6685/index.html',[['whisky and bar towel','https://en.gurutto-vietnam.com/db_img/cl_img/6685/main_img_20260227170255536.jpg'],['logo','https://en.gurutto-vietnam.com/db_img/cl_img/6685/main_img_20260227170254917.jpg']]],
+['N3','Tô Hidden Cocktails','lt',10.78223,106.70603,'n','Above GS25, 2 Lê Thánh Tôn · 18:00–02:00','Japanese-themed speakeasy reached through a convenience store.','https://vietnamisawesome.com/articles/hidden-bars-in-saigon/',[['anime wall and neon','https://vietnamisawesome.com/wp-content/uploads/2024/05/To-bar-1-1024x916.jpeg'],['bar in service','https://vietnamisawesome.com/wp-content/uploads/2024/05/To-bar2-1-1024x602.jpeg']]],
+
+['24','OKKIO Caffe','dk',10.77584,106.70318,'d','1st floor, 151 Đồng Khởi · 7:30–20:00','End of an art alley, upstairs; balcony faces the Opera House.','https://thedotmagazine.com/the-best-coffeeshops-in-ho-chi-minh-city/',[['interior','fe:2023/03/Okkio-Caffe-Saigon.jpg'],['window sign','dot:2026/02/Okkio-1.jpg']]],
+['N21','Kohei\'s Bar','dk',10.77577,106.70325,'n','151 Đồng Khởi arcade, upstairs · 14:00–00:00','Japanese owner-bartender, Martinis in icy copper goblets.','https://asia-bars.com/?p=82427',[['Kohei at his bar','dot:2024/01/Koheis-Bar-edited.jpeg'],['back bar','https://www.asia-bars.com/wp-content/uploads/2021/01/IMG_7598-1140x641.jpeg']]],
+['N18','Layla Eatery & Bar','dk',10.77541,106.70415,'n','2nd floor, 63 Đông Du · 16:00–01:00','Big social loft bar with pool table and terrace.','https://thedotmagazine.com/a-cocktail-walking-tour-of-downtown-saigon/',[['crowded bar','dot:2019/08/Layla-5-1024x683.jpg'],['drink and herb jars','dot:2019/08/Layla-2-1024x768.jpg']]],
+['26','Réhahn Gallery','dk',10.77526,106.70425,'d','74 Đồng Khởi · 8:30–22:00','Photography gallery: portraits of Vietnam\'s ethnic groups.','https://vietnam.travel/things-to-do/explore-art-exhibitions-and-galleries-hcmc',[['main room','https://images.vietnam.travel/inline-images/main-room.jpg'],['fine art room','https://images.vietnam.travel/inline-images/fine-art-room.jpg']]],
+['N19','Firkin Bar','dk',10.77585,106.70496,'n','20 Mạc Thị Bưởi · 18:00–01:00','Leather-and-wood whisky den with classic cocktails.','https://thedotmagazine.com/the-best-cocktail-bars-in-ho-chi-minh-city/',[['long wooden bar','dot:2024/01/Firkin-14.jpeg'],['staff','dot:2019/08/Firkin-1-1-1024x599.jpg']]],
+['N20','The Triệu Institute','dk',10.77579,106.70498,'n','10 Mạc Thị Bưởi, upstairs · 17:00–00:00','Gin bar for a Vietnamese gin brand; tasting flights.','https://thedotmagazine.com/the-ladies-powering-lady-trieu-gin-and-the-trieu-institute/',[['bartender with Lady Triệu gins','dot:2022/10/NNN_3667.jpg'],['at the bar','dot:2022/10/NNN_3361.jpg']]],
+['N22','Lost – Drink & Chill','dk',10.77439,106.70443,'n','71/5 Mạc Thị Bưởi · 12:00–03:00','Alley cocktail bar, open latest of the lot.','https://jackfruitadventure.com/cocktail-bars-in-ho-chi-minh-city/',[['long bar','https://vietnamisawesome.com/wp-content/uploads/2024/05/Lost-Drink-Chill-1-1024x683.jpeg'],['brick room','https://jackfruitadventure.com/wp-content/uploads/2025/07/lost-drink-and-chill.jpg']]],
+['12','Cafe Apartment','dk',10.77409,106.70406,'d','42 Nguyễn Huệ · 8:00–23:00','Nine floors of small cafes over the walking street.','https://vietnamisawesome.com/?p=2643',[['the facade','https://vietnamisawesome.com/wp-content/uploads/2023/02/Nguyen-Hue-Cafe-Apartment-Building.-Photo-by-Jet-Dela-Cruz-819x1024.jpg'],['Partea tea room','https://vietnamisawesome.com/wp-content/uploads/2023/02/Partea-Tea-Room.-Photo-by-Apollo-Adventure-1024x768.jpg']]],
+['38','Krystalini Hidden Cocktail Bar','dk',10.77411,106.70409,'n','Mezzanine, 42 Nguyễn Huệ · 16:00–00:00','Ring the bell deep inside the Cafe Apartment. Dark red room.','https://livetheworld.com/post/the-secret-speakeasy-bars-of-saigon-6swv',[['neon sign and bar','https://itin-dev.wanderlogstatic.com/freeImage/YMRvVxQTe1WEbRBNDFfhj2FjfaAhhIXP'],['red stools','https://itin-dev.wanderlogstatic.com/freeImage/SunlGjfdPgsEOXEGzd4hYSJhGJpsTKSQ']]],
+['25','tòmò càphê','dk',10.77359,106.70231,'d','42 Tôn Thất Thiệp · 11:00–20:00','Tiny loft cafe on the inner staircase of a fashion block.','https://vntravellive.com/en/to-mo-quan-ca-phe-nep-minh-sau-chung-cu-cu-ton-that-thiep-d36260.html',[['staircase','https://i.ex-cdn.com/vntravellive.com/files/content/2023/12/22/img_0568-1821.jpg'],['interior','https://i.ex-cdn.com/vntravellive.com/files/content/2023/12/22/img_0049-1821.jpg']]],
+['29','The Workshop Coffee','dk',10.77348,106.70560,'d','2nd floor, 27 Ngô Đức Kế · 8:00–20:00','Saigon\'s original third-wave loft, up an unmarked staircase.','https://feastio.com/best-cafes-saigon/',[['the loft','fe:2023/03/The-Workshop-cafe.jpg'],['barista','dot:2026/02/The-Workshop-Coffee-3.jpg']]],
+['40','Trà Việt','dk',10.77180,106.70514,'d','19 Hải Triều, upstairs · 8:00–21:00','Tea boutique with a hands-on lotus tea session in English.','https://www.byfood.com/experiences/authentic-vietnamese-lotus-tea-show-in-ho-chi-minh-city-40203',[['lotus tea session','https://dynamic-media-cdn.tripadvisor.com/media/photo-o/32/32/84/6a/caption.jpg?w=700&h=400&s=1'],['pouring','https://media-cdn.tripadvisor.com/media/attractions-splice-spp-674x446/17/12/1e/92.jpg']]],
+
+['27','Lê Công Kiều antique street','pdc',10.77055,106.70007,'d','Lê Công Kiều · 9:00–21:00','200 m lane of curio shops. Many reproductions: browse, bargain.','https://rustycompass.com/vietnam-travel-guide-233/ho-chi-minh-city-4/see-and-do-14/antique-street-le-cong-kieu-st-saigon-347',[['ceramics shop','rc:le-cong-kieu-st-16x9-0711-6_13860642631.jpg'],['street sign','rc:le-cong-kieu-st-16x9-0711-5_13860642637.jpg']]],
+['28','Fine Arts Museum','pdc',10.76995,106.69922,'d','97A Phó Đức Chính · 8:00–17:00','Colonial mansion with stained glass and tiled stairs.','https://vietnam.travel/things-to-do/explore-art-exhibitions-and-galleries-hcmc',[['the yellow mansion','https://images.vietnam.travel/inline-images/shutterstock_273514640.jpg'],['inside','https://images.vietnam.travel/inline-images/287499355_5130487493653574_2659208267213764791_n.jpg']]],
+['39','Maison Marou flagship','pdc',10.76949,106.69782,'d','167–169 Calmette · 9:00–22:00','Chocolate cafe with a working mini-factory behind glass.','https://rustycompass.com/vietnam-travel-guide-233/ho-chi-minh-city-4/eating-16/maison-marou-saigon-1243',[['cafe counter','rc:maison-marou-chocolate-1016-00002_14767762808.jpg'],['roasted cocoa beans','rc:maison-marou-chocolate-1016-00007_14767762805.jpg']]],
+
+['14','14 Tôn Thất Đạm apartment block','ttd',10.76955,106.70417,'d','14 Tôn Thất Đạm','The original hipster block: cafes, bars and boutiques.','https://vietnamcoracle.com/the-cafe-apartment-at-no-14-ton-that-dam-saigon',[['exterior','https://cms.vietnamcoracle.com/wp-content/uploads/2018/10/IMG_5496-copy-blog.jpg'],['Things Cafe','https://cms.vietnamcoracle.com/wp-content/uploads/2018/10/IMG_5668-copy-blog.jpg']]],
+['42','Snuffbox','ttd',10.76960,106.70416,'n','14 Tôn Thất Đạm, up the alley stairs · 14:00–02:00','Prohibition-style speakeasy on two levels, jazz and DJs.','https://www.rustycompass.com/vietnam-travel-guide-233/ho-chi-minh-city-4/nightlife-17/snuffbox-speakeasy-saigon-1221',[['lounge','rc:snuffbox-speakeasy-saigon-0516-00003_14625111615.jpg'],['DJ at work','sl:2020/11/13-Snuffbox-1.jpg']]],
+
+['30','Nhà Chung Cafe','nt',10.77066,106.69170,'d','5th floor, 35 Nguyễn Văn Tráng · 8:00–22:00','Homey apartment cafe: take the garage lift, find the oval door.','https://vietcetera.com/en/ideas-for-a-weekend-coffee-date-step-inside-saigons-vintage-apartments',[['counter','https://mia.vn/media/uploads/blog-du-lich/chung-cu-35-nguyen-van-trang-nha-chung-cafe-1729730108.jpg'],['guests and cat','https://cdn-resize-img.vietcetera.com/_next/image?url=https%3A%2F%2Fimg.vietcetera.com%2Fuploads%2Fimages%2F07-dec-2024%2Ffacebook-image-2--1733542034033.jpg&q=80&w=768']]],
+['41','The Craft House Original','nt',10.77095,106.69253,'d','3rd floor, 28 Nguyễn Trãi · 11:00–19:00','Handmade work by Vietnamese makers: ceramics, board games.','https://hivelife.com/shop-local-support-local/',[['shop interior','https://hivelife.com/wp-content/uploads/2018/01/Hive-Life-Craft-House-1-1024x427.jpg'],['shop sign','https://hivelife.com/wp-content/uploads/2018/01/The-Craft-House-Hive-Life-3.jpg']]],
+
+['13','Công Đoàn bird cafe','solo',10.7762,106.6921,'d','Across from Tao Đàn Park · about 6:00–9:30','Songbird owners hang cages and gossip. Best on weekends.','https://www.kathmanduandbeyond.com/?p=11645',[['terrace (old park site)','https://www.holidify.com/images/cmsuploads/compressed/32595648905_4b3216161d_b_20181211194133.jpg'],['hanging cages','https://www.holidify.com/images/cmsuploads/compressed/17172786873_7d9e4be6c2_b_20181211194317.jpg']]]
+];
+
+
+var CLS={home:'Home block',ltt26:'26 Lý Tự Trọng',past:'Pasteur alleys',lttw:'Lý Tự Trọng west',bt:'Bến Thành',hbt:'Hai Bà Trưng',lt:'Little Tokyo',dk:'Đồng Khởi',pdc:'Phó Đức Chính',ttd:'Tôn Thất Đạm',nt:'Nguyễn Trãi',solo:'Lonely ones'};
+var LS='saigon-pockets-v1';
+var st={origin:HOME,label:'your stay at 91 Nguyễn Du',f:'all',q:'',saved:{},list:false,located:false};
+try{var raw=JSON.parse(localStorage.getItem(LS)||'{}');if(raw.saved)st.saved=raw.saved;if(raw.list)st.list=true;}catch(e){}
+function persist(){try{localStorage.setItem(LS,JSON.stringify({saved:st.saved,list:st.list}));}catch(e){}}
+
+function hav(a,b){var R=6371000,t=Math.PI/180,dl=(b[0]-a[0])*t,dn=(b[1]-a[1])*t,
+ x=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a[0]*t)*Math.cos(b[0]*t)*Math.sin(dn/2)*Math.sin(dn/2);
+ return 2*R*Math.asin(Math.sqrt(x));}
+function fmt(m){return m<950?Math.max(10,Math.round(m/10)*10)+' m':(m/1000).toFixed(m<9950?1:0)+' km';}
+function walk(m){var n=Math.max(1,Math.round(m*1.3/75));return n>180?'far':n+' min';}
+function h(tag,attrs,kids){var e=document.createElement(tag),k;attrs=attrs||{};
+  for(k in attrs){if(k==='text')e.textContent=attrs[k];else if(k==='cls')e.className=attrs[k];else e.setAttribute(k,attrs[k]);}
+  (kids||[]).forEach(function(c){if(c)e.appendChild(c);});return e;}
+function $(id){return document.getElementById(id);}
+function nsave(){return Object.keys(st.saved).length;}
+
+var model={groups:[],rank:{},byId:{}};
+function compute(){
+  var q=st.q.trim().toLowerCase(),g={},all={};
+  S.forEach(function(s){
+    var d=hav(st.origin,[s[3],s[4]]);
+    (all[s[2]]=all[s[2]]||[]).push(d);
+    model.byId[s[0]]={s:s,d:d};
+    if(st.f==='d'&&s[5]!=='d')return;
+    if(st.f==='n'&&s[5]!=='n')return;
+    if(st.f==='saved'&&!st.saved[s[0]])return;
+    if(q&&(s[1]+' '+s[6]+' '+s[7]+' '+CL[s[2]]).toLowerCase().indexOf(q)<0)return;
+    (g[s[2]]=g[s[2]]||[]).push({s:s,d:d});
+  });
+  var order=Object.keys(all).map(function(k){return {k:k,d:Math.min.apply(null,all[k])};}).sort(function(a,b){return a.d-b.d;});
+  model.rank={};order.forEach(function(o,i){model.rank[o.k]=i+1;});
+  model.order=order;
+  model.groups=order.filter(function(o){return g[o.k];}).map(function(o){
+    g[o.k].sort(function(a,b){return a.d-b.d;});
+    return {k:o.k,d:o.d,items:g[o.k]};
+  });
+}
+
+function renderTiles(){
+  var t=$('tiles');t.textContent='';
+  var o=model.order[0],best=null;
+  S.forEach(function(s){var m=model.byId[s[0]];if(!best||m.d<best.d)best=m;});
+  var day=S.filter(function(s){return s[5]==='d';}).length;
+  function tile(lab,val,sub,fn){var b=h('button',{cls:'tile',type:'button'},[h('span',{cls:'lab',text:lab}),h('span',{cls:'val',text:val}),h('span',{cls:'sub',text:sub})]);b.addEventListener('click',fn);return b;}
+  t.appendChild(tile('Nearest pocket',CLS[o.k],fmt(o.d)+' · '+walk(o.d)+' walk',function(){jump(o.k);}));
+  t.appendChild(tile('Nearest spot',best.s[1],fmt(best.d)+' · '+walk(best.d)+' walk',function(){openSheet(best.s[0]);}));
+  t.appendChild(tile('By daylight',day+' spots','cafes, shops, galleries',function(){setFilter('d');}));
+  t.appendChild(tile('After dark',(S.length-day)+' spots','bars, izakayas, baths',function(){setFilter('n');}));
+}
+
+function renderMap(){
+  var svg=$('map'),NS='http://www.w3.org/2000/svg';svg.textContent='';
+  var W=360,H=250,pad=22,pts=S.map(function(s){return [s[3],s[4]];});
+  var showMe=hav(st.origin,[10.7765,106.7005])<2500;
+  if(showMe)pts.push(st.origin);
+  var la=pts.map(function(p){return p[0];}),lo=pts.map(function(p){return p[1];});
+  var minLa=Math.min.apply(null,la),maxLa=Math.max.apply(null,la),minLo=Math.min.apply(null,lo),maxLo=Math.max.apply(null,lo);
+  var kx=Math.cos(10.777*Math.PI/180),w=(maxLo-minLo)*kx,hh=(maxLa-minLa);
+  var sc=Math.min((W-2*pad)/w,(H-2*pad)/hh),ox=(W-w*sc)/2,oy=(H-hh*sc)/2;
+  function X(lon){return ox+(lon-minLo)*kx*sc;} function Y(lat){return H-oy-(lat-minLa)*sc;}
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  S.forEach(function(s){
+    var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]]));
+    svg.appendChild(el('circle',{cx:X(s[4]).toFixed(1),cy:Y(s[3]).toFixed(1),r:3.2,fill:s[5]==='n'?'var(--night)':'var(--day)',opacity:on?0.85:0.15}));
+  });
+  model.order.forEach(function(o){
+    var ps=S.filter(function(s){return s[2]===o.k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
+    var cx=X(b/ps.length),cy=Y(a/ps.length)-13;
+    var g=el('g',{tabindex:'0',role:'button','aria-label':'Pocket '+model.rank[o.k]+': '+CL[o.k],style:'cursor:pointer'});
+    g.appendChild(el('circle',{cx:cx.toFixed(1),cy:cy.toFixed(1),r:10,fill:'var(--ink)'}));
+    var t=el('text',{x:cx.toFixed(1),y:(cy+3.6).toFixed(1),'text-anchor':'middle','font-size':'10.5','font-weight':'700',fill:'var(--bg)'});
+    t.textContent=model.rank[o.k];g.appendChild(t);
+    g.addEventListener('click',function(){jump(o.k);});
+    g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();jump(o.k);}});
+    svg.appendChild(g);
+  });
+  if(showMe){
+    var mx=X(st.origin[1]),my=Y(st.origin[0]);
+    svg.appendChild(el('circle',{cx:mx.toFixed(1),cy:my.toFixed(1),r:11,fill:'var(--lantern)',opacity:0.22}));
+    svg.appendChild(el('circle',{cx:mx.toFixed(1),cy:my.toFixed(1),r:5,fill:'var(--lantern)',stroke:'var(--surface)','stroke-width':2}));
+  }
+}
+
+function renderChips(){
+  var c=$('chips');c.textContent='';
+  model.groups.forEach(function(g){
+    var a=h('a',{cls:'chip',href:'#p-'+g.k,'data-k':g.k},[h('span',{cls:'n',text:String(model.rank[g.k])}),h('span',{text:CLS[g.k]}),h('span',{cls:'m',text:fmt(g.d)})]);
+    a.addEventListener('click',function(e){e.preventDefault();jump(g.k);});
+    c.appendChild(a);
+  });
+}
+
+function cover(s,box){
+  var p=s[9][0],im=document.createElement('img');
+  im.loading='lazy';im.decoding='async';im.referrerPolicy='no-referrer';im.alt=s[1]+': '+p[0];im.src=U(p[1]);
+  im.onerror=function(){im.remove();box.appendChild(h('div',{cls:'noimg',text:'Photo blocked by its site. Open the card for links.'}));};
+  box.appendChild(im);
+}
+function renderCard(o){
+  var s=o.s,card=h('article',{cls:'card'});
+  var cv=h('div',{cls:'cover'});cover(s,cv);
+  cv.appendChild(h('span',{cls:'pill',text:fmt(o.d)+' · '+walk(o.d)}));
+  var sv=h('button',{cls:'save',type:'button','aria-pressed':st.saved[s[0]]?'true':'false','aria-label':'Save '+s[1],text:st.saved[s[0]]?'♥':'♡'});
+  sv.addEventListener('click',function(e){e.stopPropagation();toggleSave(s[0]);});
+  cv.appendChild(sv);
+  var op=h('button',{cls:'open',type:'button'},[
+    h('span',{cls:'tag '+s[5],text:s[5]==='n'?'Night':'Day'}),
+    h('span',{cls:'cname',text:s[1]}),
+    h('span',{cls:'cwhy',text:s[7]})]);
+  op.addEventListener('click',function(){openSheet(s[0]);});
+  cv.addEventListener('click',function(){openSheet(s[0]);});
+  card.appendChild(cv);card.appendChild(op);return card;
+}
+function renderOut(){
+  var out=$('out');out.textContent='';
+  model.groups.forEach(function(g){
+    var nd=g.items.filter(function(o){return o.s[5]==='d';}).length,nn=g.items.length-nd;
+    var mix=h('div',{cls:'mix',title:nd+' day, '+nn+' night'},[h('i',{style:'width:'+(100*nd/g.items.length)+'%;background:var(--day)'}),h('i',{style:'width:'+(100*nn/g.items.length)+'%;background:var(--night)'})]);
+    var head=h('div',{cls:'phead pad max'},[
+      h('div',{},[h('h2',{},[h('span',{cls:'rank',text:model.rank[g.k]+'  '}),h('span',{text:CL[g.k]})]),
+        h('div',{cls:'pmeta',text:g.items.length+(g.items.length===1?' spot':' spots')+' · '+nd+' day, '+nn+' night · nearest '+fmt(g.d)+', '+walk(g.d)+' walk'})]),
+      mix]);
+    var row=h('div',{cls:'row max'});
+    g.items.forEach(function(o){row.appendChild(renderCard(o));});
+    out.appendChild(h('section',{cls:'pocket',id:'p-'+g.k},[head,row]));
+  });
+  if(!model.groups.length){
+    out.appendChild(h('p',{cls:'empty pad max',text:st.f==='saved'?'Nothing saved yet. Tap the heart on a card to keep it here.':'No spots match. Try a shorter word or another filter.'}));
+  }
+}
+function renderAll(){
+  compute();renderTiles();renderMap();renderChips();renderOut();
+  $('segSaved').textContent='Saved'+(nsave()?' '+nsave():'');
+  document.body.classList.toggle('list',st.list);
+  $('viewBtn').textContent=st.list?'Row view':'List view';
+  $('viewBtn').setAttribute('aria-pressed',st.list?'true':'false');
+  spy();
+}
+function jump(k){var e=$('p-'+k);if(e)e.scrollIntoView({block:'start'});else{setFilter('all');var e2=$('p-'+k);if(e2)e2.scrollIntoView({block:'start'});}}
+function say(t){$('status').textContent=t;}
+function setFilter(f){st.f=f;
+  Array.prototype.forEach.call(document.querySelectorAll('.seg button'),function(b){b.setAttribute('aria-pressed',b.getAttribute('data-f')===f?'true':'false');});
+  renderAll();}
+function toggleSave(id){if(st.saved[id])delete st.saved[id];else st.saved[id]=1;persist();renderAll();if(cur===id)fillSave();}
+
+var cur=null;
+function fillSave(){var on=!!st.saved[cur];$('sSave').textContent=on?'♥ Saved':'♡ Save';$('sSave').setAttribute('aria-pressed',on?'true':'false');}
+function openSheet(id){
+  var m=model.byId[id],s=m.s;cur=id;
+  var gal=$('sGal');gal.textContent='';
+  s[9].forEach(function(p){
+    var url=U(p[1]),a=h('a',{href:url,target:'_blank',rel:'noopener noreferrer'});
+    var im=document.createElement('img');im.referrerPolicy='no-referrer';im.alt=s[1]+': '+p[0];im.src=url;
+    im.onerror=function(){a.classList.add('failed');a.textContent='';a.appendChild(h('span',{text:'Photo blocked by its site. Tap to open it: '+p[0]}));};
+    a.appendChild(im);a.appendChild(h('span',{text:p[0]}));gal.appendChild(a);
+  });
+  gal.scrollLeft=0;
+  $('sTag').className='tag '+s[5];$('sTag').textContent=(s[5]==='n'?'Night':'Day')+' · '+CL[s[2]];
+  $('sName').textContent=s[1];
+  $('sDist').textContent=fmt(m.d);$('sWalk').textContent=walk(m.d);$('sPocket').textContent='No. '+model.rank[s[2]];
+  $('sWhy').textContent=s[7];$('sAddr').textContent=s[6];
+  $('sDir').href='https://www.google.com/maps/dir/?api=1&destination='+s[3]+','+s[4]+'&travelmode=walking';
+  $('sRead').href=s[8];fillSave();
+  var d=$('sheet');if(d.showModal){if(!d.open)d.showModal();}else d.setAttribute('open','');
+}
+$('sClose').addEventListener('click',function(){$('sheet').close();});
+$('sSave').addEventListener('click',function(){if(cur)toggleSave(cur);});
+$('sheet').addEventListener('click',function(e){if(e.target===this)this.close();});
+
+function setOrigin(p,label,real){st.origin=p;st.label=label;st.located=!!real;renderAll();
+  say('Sorted from '+label+'. Nearest pocket first, nearest spot first in each row.');
+  $('fabText').textContent=real?'Update my location':'Sort by my location';
+  window.scrollTo(0,0);}
+$('locate').addEventListener('click',function(){
+  var fab=this;
+  if(!navigator.geolocation){say('This browser gives no location here. Set your position by hand below.');document.querySelector('details.manual').open=true;window.scrollTo(0,0);return;}
+  fab.classList.add('busy');say('Asking your phone for its location…');
+  navigator.geolocation.getCurrentPosition(function(pos){fab.classList.remove('busy');
+    setOrigin([pos.coords.latitude,pos.coords.longitude],'your location, within about '+Math.round(pos.coords.accuracy)+' m',true);
+  },function(err){fab.classList.remove('busy');
+    say('Location was not available ('+(err&&err.message?err.message:'blocked')+'). Set your position by hand below.');
+    document.querySelector('details.manual').open=true;window.scrollTo(0,0);
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
+});
+Array.prototype.forEach.call(document.querySelectorAll('.seg button'),function(b){b.addEventListener('click',function(){setFilter(b.getAttribute('data-f'));});});
+$('viewBtn').addEventListener('click',function(){st.list=!st.list;persist();renderAll();});
+var qt=null;$('q').addEventListener('input',function(){var v=this.value;clearTimeout(qt);qt=setTimeout(function(){st.q=v;compute();renderChips();renderOut();spy();},120);});
+var sel=$('near');Object.keys(CL).forEach(function(k){sel.appendChild(h('option',{value:k,text:CL[k]}));});
+$('useNear').addEventListener('click',function(){var k=sel.value,ps=S.filter(function(s){return s[2]===k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
+  setOrigin([a/ps.length,b/ps.length],'the middle of '+CL[k],false);});
+$('useCoords').addEventListener('click',function(){var m=/(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)/.exec($('coords').value);
+  if(!m){say('Could not read coordinates. Use the form 10.7773, 106.6985.');return;}
+  setOrigin([parseFloat(m[1]),parseFloat(m[2])],'the coordinates you entered',false);});
+
+var ticking=false;
+function spy(){var secs=document.querySelectorAll('section.pocket'),on=null,i;
+  for(i=0;i<secs.length;i++){if(secs[i].getBoundingClientRect().top<200)on=secs[i].id.slice(2);}
+  Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(c){
+    var hit=c.getAttribute('data-k')===on;c.classList.toggle('on',hit);
+    if(hit&&c.scrollIntoView&&c.parentNode.scrollWidth>c.parentNode.clientWidth){var p=c.parentNode;p.scrollLeft=c.offsetLeft-p.clientWidth/2+c.clientWidth/2;}
+  });}
+window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();});},{passive:true});
+
+renderAll();
+say('Sorted from '+st.label+'. Tap the red button when you are out in the city.');
+</script>
+</body>
+</html>
