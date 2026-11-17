@@ -43,10 +43,12 @@ h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:ba
 
 .mapcard{margin-top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .mapcard svg{display:block;width:100%;height:auto}
-#lmap{height:340px;width:100%;background:var(--surface);z-index:0}
-.pbadge{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 12px/1 inherit;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer}
-.leaflet-container{font:inherit}
-@media (prefers-color-scheme: dark){.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.7)}.leaflet-control-attribution{background:rgba(20,26,24,.75)!important;color:#b8c4be}.leaflet-control-attribution a{color:#d7e2dc}.leaflet-bar a{background:#1b2420;color:#e8efe9;border-color:#2c3833}}
+.mapstage{position:relative}
+#gmap{position:absolute;inset:0;display:none}
+#map{position:relative}
+#map.onmap{pointer-events:none}
+#map.onmap .pk{pointer-events:auto}
+#map.onmap .spot{stroke:var(--surface);stroke-width:1}
 .maplegend{display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 14px 12px;font-size:.78rem;color:var(--muted)}
 .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
 
@@ -129,8 +131,6 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 @media (prefers-reduced-motion:reduce){.fab.busy .ring{animation:none}}
 </style>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 <header class="hero pad max">
@@ -139,13 +139,12 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
   <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
   <div class="tiles" id="tiles"></div>
   <div class="mapcard">
-    <div id="lmap" role="application" aria-label="Map of the spots, pockets numbered by distance from you"></div>
-    <svg id="map" viewBox="0 0 360 250" role="img" aria-label="Sketch map of the pockets, numbered by distance from you" style="display:none"></svg>
+    <div class="mapstage"><div id="gmap"></div><svg id="map" viewBox="0 0 360 250" role="img" aria-label="Map of the pockets, numbered by distance from you"></svg></div>
     <div class="maplegend">
       <span><i class="dot" style="background:var(--day)"></i>day spot</span>
       <span><i class="dot" style="background:var(--night)"></i>night spot</span>
       <span><i class="dot" style="background:var(--lantern)"></i>you are here</span>
-      <span>Numbers rank pockets by distance. Tap a number or a dot. Pinch to zoom.</span>
+      <span>Numbers rank pockets by distance. Tap one.</span>
     </div>
   </div>
   <div id="status" role="status" aria-live="polite"></div>
@@ -375,73 +374,60 @@ function renderTiles(){
   t.appendChild(tile('After dark',(S.length-day)+' spots','bars, izakayas, baths',function(){setFilter('n');}));
 }
 
-var LM=null,LG=null,lastFit='';
-function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+var GM=null,GMO=null,gmFit='',gmRaf=0;
+function mapPts(){var pts=S.map(function(s){return [s[3],s[4]];});
+  if(hav(st.origin,[10.7765,106.7005])<2500)pts.push(st.origin);return pts;}
 function renderMap(){
-  if(!window.L){renderSketch();return;}
-  if(!LM){
-    LM=L.map('lmap',{zoomControl:true,attributionControl:true,scrollWheelZoom:false});
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(LM);
-    LG=L.layerGroup().addTo(LM);
-  }
-  LG.clearLayers();
-  var day=cssv('--day'),night=cssv('--night'),me=cssv('--lantern'),surf=cssv('--surface');
-  S.forEach(function(s){
-    var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]]));
-    var m=L.circleMarker([s[3],s[4]],{radius:6,color:surf,weight:1.5,fillColor:s[5]==='n'?night:day,fillOpacity:on?0.95:0.2,opacity:on?1:0.2});
-    m.bindTooltip(s[1]);m.on('click',function(){openSheet(s[0]);});m.addTo(LG);
-  });
-  model.order.forEach(function(o){
-    var ps=S.filter(function(s){return s[2]===o.k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
-    var ic=L.divIcon({className:'',html:'<span class="pbadge">'+model.rank[o.k]+'</span>',iconSize:[24,24],iconAnchor:[12,34]});
-    var mk=L.marker([a/ps.length,b/ps.length],{icon:ic,keyboard:true,title:'Pocket '+model.rank[o.k]+': '+CL[o.k],zIndexOffset:500});
-    mk.on('click',function(){jump(o.k);});mk.addTo(LG);
-  });
-  var showMe=hav(st.origin,[10.7765,106.7005])<6000;
-  if(showMe){
-    L.circleMarker(st.origin,{radius:14,stroke:false,fillColor:me,fillOpacity:0.25,interactive:false}).addTo(LG);
-    L.circleMarker(st.origin,{radius:7,color:'#fff',weight:2.5,fillColor:me,fillOpacity:1}).bindTooltip('You are here').addTo(LG);
-  }
-  var key=st.origin.join(',');
-  if(key!==lastFit){
-    lastFit=key;var pts=S.map(function(s){return [s[3],s[4]];});if(showMe)pts.push(st.origin);
-    LM.fitBounds(pts,{padding:[18,18]});
-  }
-  setTimeout(function(){LM.invalidateSize();},60);
-}
-
-function renderSketch(){
-  var svg=$('map');svg.style.display='block';$('lmap').style.display='none';var _x=0,NS='http://www.w3.org/2000/svg';svg.textContent='';
-  var W=360,H=250,pad=22,pts=S.map(function(s){return [s[3],s[4]];});
+  var svg=$('map'),NS='http://www.w3.org/2000/svg';svg.textContent='';
+  var W=360,H=250,pad=22,pts=mapPts();
   var showMe=hav(st.origin,[10.7765,106.7005])<2500;
-  if(showMe)pts.push(st.origin);
   var la=pts.map(function(p){return p[0];}),lo=pts.map(function(p){return p[1];});
   var minLa=Math.min.apply(null,la),maxLa=Math.max.apply(null,la),minLo=Math.min.apply(null,lo),maxLo=Math.max.apply(null,lo);
   var kx=Math.cos(10.777*Math.PI/180),w=(maxLo-minLo)*kx,hh=(maxLa-minLa);
   var sc=Math.min((W-2*pad)/w,(H-2*pad)/hh),ox=(W-w*sc)/2,oy=(H-hh*sc)/2;
-  function X(lon){return ox+(lon-minLo)*kx*sc;} function Y(lat){return H-oy-(lat-minLa)*sc;}
+  var proj=(GM&&GMO)?GMO.getProjection():null,cw=$('gmap').clientWidth||W,live=!!(proj&&cw);
+  svg.setAttribute('class',live?'onmap':'');
+  function P(lat,lon){
+    if(live){var q=proj.fromLatLngToContainerPixel(new google.maps.LatLng(lat,lon));if(q)return [q.x*W/cw,q.y*W/cw];}
+    return [ox+(lon-minLo)*kx*sc,H-oy-(lat-minLa)*sc];}
   function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
   S.forEach(function(s){
-    var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]]));
-    svg.appendChild(el('circle',{cx:X(s[4]).toFixed(1),cy:Y(s[3]).toFixed(1),r:3.2,fill:s[5]==='n'?'var(--night)':'var(--day)',opacity:on?0.85:0.15}));
+    var on=(st.f==='all'||st.f===s[5]||(st.f==='saved'&&st.saved[s[0]])),q=P(s[3],s[4]);
+    svg.appendChild(el('circle',{'class':'spot',cx:q[0].toFixed(1),cy:q[1].toFixed(1),r:3.2,fill:s[5]==='n'?'var(--night)':'var(--day)',opacity:on?0.85:0.15}));
   });
   model.order.forEach(function(o){
     var ps=S.filter(function(s){return s[2]===o.k;}),a=0,b=0;ps.forEach(function(s){a+=s[3];b+=s[4];});
-    var cx=X(b/ps.length),cy=Y(a/ps.length)-13;
-    var g=el('g',{tabindex:'0',role:'button','aria-label':'Pocket '+model.rank[o.k]+': '+CL[o.k],style:'cursor:pointer'});
+    var q=P(a/ps.length,b/ps.length),cx=q[0],cy=q[1]-13;
+    var g=el('g',{'class':'pk',tabindex:'0',role:'button','aria-label':'Pocket '+model.rank[o.k]+': '+CL[o.k],style:'cursor:pointer'});
     g.appendChild(el('circle',{cx:cx.toFixed(1),cy:cy.toFixed(1),r:10,fill:'var(--ink)'}));
-    var t=el('text',{x:cx.toFixed(1),y:(cy+3.6).toFixed(1),'text-anchor':'middle','font-size':'10.5','font-weight':'700',fill:'var(--bg)'});
-    t.textContent=model.rank[o.k];g.appendChild(t);
+    var tx=el('text',{x:cx.toFixed(1),y:(cy+3.6).toFixed(1),'text-anchor':'middle','font-size':'10.5','font-weight':'700',fill:'var(--bg)'});
+    tx.textContent=model.rank[o.k];g.appendChild(tx);
     g.addEventListener('click',function(){jump(o.k);});
     g.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();jump(o.k);}});
     svg.appendChild(g);
   });
   if(showMe){
-    var mx=X(st.origin[1]),my=Y(st.origin[0]);
+    var m=P(st.origin[0],st.origin[1]),mx=m[0],my=m[1];
     svg.appendChild(el('circle',{cx:mx.toFixed(1),cy:my.toFixed(1),r:11,fill:'var(--lantern)',opacity:0.22}));
     svg.appendChild(el('circle',{cx:mx.toFixed(1),cy:my.toFixed(1),r:5,fill:'var(--lantern)',stroke:'var(--surface)','stroke-width':2}));
   }
+  if(GM){var key=st.origin.join(',');if(key!==gmFit){gmFit=key;gmFitNow();}}
 }
+function gmFitNow(){
+  var b=new google.maps.LatLngBounds();mapPts().forEach(function(p){b.extend(new google.maps.LatLng(p[0],p[1]));});
+  var pd=Math.round(22*($('gmap').clientWidth||360)/360);GM.fitBounds(b,pd);}
+function gmRedraw(){if(gmRaf)return;gmRaf=(window.requestAnimationFrame||setTimeout)(function(){gmRaf=0;renderMap();});}
+function gmReady(){
+  try{
+    var box=$('gmap');box.style.display='block';
+    GM=new google.maps.Map(box,{center:{lat:10.7772,lng:106.7003},zoom:15,disableDefaultUI:true,gestureHandling:'greedy',clickableIcons:false,keyboardShortcuts:false,colorScheme:'FOLLOW_SYSTEM'});
+    GMO=new google.maps.OverlayView();GMO.onAdd=function(){};GMO.onRemove=function(){};GMO.draw=function(){gmRedraw();};GMO.setMap(GM);
+    GM.addListener('bounds_changed',gmRedraw);
+    gmFit=st.origin.join(',');gmFitNow();
+  }catch(e){gmOff();}
+}
+function gmOff(){GM=null;GMO=null;var box=$('gmap');if(box)box.style.display='none';renderMap();}
+window.gm_authFailure=gmOff;
 
 function renderChips(){
   var c=$('chips');c.textContent='';
@@ -566,5 +552,6 @@ window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(wind
 renderAll();
 say('Sorted from '+st.label+'. Tap the red button when you are out in the city.');
 </script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB7XRbgf43ZOC3IOHMSKzzxhezVG1P2fxs&v=weekly&loading=async&callback=gmReady"></script>
 </body>
 </html>
