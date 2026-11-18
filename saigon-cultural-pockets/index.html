@@ -24,7 +24,7 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 html{font-size:calc(8px + .5rem)}
-body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1rem;line-height:1.45;padding-bottom:6rem}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1rem;line-height:1.45;padding-bottom:4.5rem}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--lantern)}
@@ -34,7 +34,7 @@ a{color:var(--lantern)}
 
 header.hero{padding-top:20px}
 .kicker{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:clamp(1.25rem,6.6vw,1.9rem);line-height:1.1;margin:6px 0 8px;font-weight:800;text-wrap:balance;letter-spacing:-.01em}
 .lede{color:var(--muted);margin:0;max-width:60ch}
 
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
@@ -48,7 +48,7 @@ h1{font-size:2rem;line-height:1.05;margin:6px 0 8px;font-weight:800;text-wrap:ba
 .mapstage{position:relative}
 #gmap{position:absolute;inset:0;display:none}
 #map{position:relative}
-.mapme{position:absolute;right:10px;bottom:28px;z-index:3;width:clamp(44px,2.75em,56px);height:clamp(44px,2.75em,56px);border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.mapme{position:absolute;right:8px;bottom:24px;z-index:3;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 .mapme[hidden]{display:none}
 .mapme.busy svg{animation:pulse 1s ease-in-out infinite}
 #map.onmap{pointer-events:none}
@@ -79,11 +79,12 @@ details.manual summary{color:var(--muted);cursor:pointer}
 .mrow select,.mrow input{flex:1 1 170px;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
 
 section.pocket{margin-top:26px;scroll-margin-top:var(--sth,150px)}
-.phead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
-.phead h2{margin:0;font-size:1.22rem;font-weight:800;line-height:1.15;text-wrap:balance}
+.phead{display:block}
+.pline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px}
+.phead h2{margin:0;font-size:1.12rem;font-weight:800;line-height:1.15;text-wrap:balance}
 .phead .rank{color:var(--lantern);font-variant-numeric:tabular-nums}
-.pmeta{color:var(--muted);font-size:.86rem;margin-top:2px;font-variant-numeric:tabular-nums}
-.mix{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--chip);width:72px;flex:0 0 auto;margin-bottom:6px}
+.pmeta{color:var(--muted);font-size:.84rem;font-variant-numeric:tabular-nums}
+.mix{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--chip);width:56px;flex:0 0 auto}
 .mix i{display:block;height:100%}
 .row{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:12px 16px 6px;scroll-padding-left:16px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .row::-webkit-scrollbar{display:none}
@@ -94,7 +95,7 @@ body.list .card{max-width:none}
 .cover img{width:100%;height:100%;object-fit:cover;display:block}
 .cover .noimg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;text-align:center;font-size:.8rem;color:var(--muted)}
 .pill{position:absolute;left:8px;top:8px;background:rgba(10,16,14,.78);color:#fff;border-radius:999px;padding:4px 9px;font-size:.76rem;font-weight:600;font-variant-numeric:tabular-nums}
-.save{position:absolute;right:6px;top:6px;width:max(38px,2.4em);height:max(38px,2.4em);border-radius:50%;border:0;background:rgba(10,16,14,.6);color:#fff;font-size:1.1rem;line-height:1;display:flex;align-items:center;justify-content:center}
+.save{position:absolute;right:6px;top:6px;width:34px;height:34px;border-radius:50%;border:0;background:rgba(10,16,14,.6);color:#fff;font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center}
 .save[aria-pressed="true"]{background:var(--lantern);color:var(--lantern-ink)}
 .open{border:0;background:transparent;text-align:left;padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
 .cname{font-weight:800;font-size:1rem;line-height:1.2}
@@ -105,8 +106,9 @@ body.list .card{max-width:none}
 .tag.d{color:var(--day)} .tag.n{color:var(--night)} .tag.h{color:var(--host)}
 .empty{color:var(--muted);margin-top:24px}
 
-.fab{position:fixed;right:16px;bottom:18px;max-width:calc(100% - 32px);text-align:left;z-index:30;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:.8rem 1.15rem;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,.28);display:flex;gap:8px;align-items:center}
-.fab .ring{flex:0 0 auto;width:12px;height:12px;border-radius:50%;border:3px solid currentColor}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;max-width:calc(100% - 32px);white-space:nowrap;z-index:30;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;gap:7px;align-items:center;transition:opacity .15s}
+.fab.tuck{opacity:0;pointer-events:none}
+.fab .ring{flex:0 0 auto;width:9px;height:9px;border-radius:50%;border:2px solid currentColor}
 .fab.busy .ring{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.5);opacity:.4}}
 
@@ -134,7 +136,7 @@ dialog#sheet::backdrop{background:rgba(5,10,8,.6)}
 .act.primary{background:var(--lantern);color:var(--lantern-ink);border-color:var(--lantern)}
 .act.wide{grid-column:1/-1}
 footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
-@media (min-width:45rem){h1{font-size:2.6rem}.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.card{flex-basis:17.5rem}}
+@media (min-width:45rem){h1{font-size:2.4rem}.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.card{flex-basis:17.5rem}}
 @media (max-width:13rem){.tiles{grid-template-columns:1fr}}
 .sticky.nostick{position:static}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
@@ -148,7 +150,7 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
   <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
   <div class="tiles" id="tiles"></div>
   <div class="mapcard">
-    <div class="mapstage"><div id="gmap"></div><svg id="map" viewBox="0 0 360 250" role="img" aria-label="Map of the pockets, numbered by distance from you"></svg><button class="mapme" id="mapMe" type="button" aria-label="Centre the map on my location" title="Centre the map on my location" hidden><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button></div>
+    <div class="mapstage"><div id="gmap"></div><svg id="map" viewBox="0 0 360 250" role="img" aria-label="Map of the pockets, numbered by distance from you"></svg><button class="mapme" id="mapMe" type="button" aria-label="Centre the map on my location" title="Centre the map on my location" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button></div>
     <div class="maplegend">
       <span><i class="dot" style="background:var(--day)"></i>day spot</span>
       <span><i class="dot" style="background:var(--night)"></i>night spot</span>
@@ -488,9 +490,8 @@ function renderOut(){
     var nd=g.items.filter(function(o){return o.s[5]==='d';}).length,nn=g.items.length-nd;
     var mix=h('div',{cls:'mix',title:nd+' day, '+nn+' night'},[h('i',{style:'width:'+(100*nd/g.items.length)+'%;background:var(--day)'}),h('i',{style:'width:'+(100*nn/g.items.length)+'%;background:var(--night)'})]);
     var head=h('div',{cls:'phead pad max'},[
-      h('div',{},[h('h2',{},[h('span',{cls:'rank',text:model.rank[g.k]+'  '}),h('span',{text:CL[g.k]})]),
-        h('div',{cls:'pmeta',text:g.items.length+(g.items.length===1?' spot':' spots')+' · '+nd+' day, '+nn+' night · nearest '+fmt(g.d)+', '+walk(g.d)+' walk'})]),
-      mix]);
+      h('h2',{},[h('span',{cls:'rank',text:model.rank[g.k]+'  '}),h('span',{text:CL[g.k]})]),
+      h('div',{cls:'pline'},[h('div',{cls:'pmeta',text:g.items.length+(g.items.length===1?' spot':' spots')+' · '+nd+' day, '+nn+' night · nearest '+fmt(g.d)+', '+walk(g.d)+' walk'}),mix])]);
     var row=h('div',{cls:'row max'});
     g.items.forEach(function(o,i){row.appendChild(renderCard(o,i+1,g.items.length));});
     out.appendChild(h('section',{cls:'pocket',id:'p-'+g.k},[head,row]));
@@ -585,7 +586,11 @@ function spy(){var secs=document.querySelectorAll('section.pocket'),on=null,i;
     var hit=c.getAttribute('data-k')===on;c.classList.toggle('on',hit);
     if(hit&&c.scrollIntoView&&c.parentNode.scrollWidth>c.parentNode.clientWidth){var p=c.parentNode;p.scrollLeft=c.offsetLeft-p.clientWidth/2+c.clientWidth/2;}
   });}
-window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();});},{passive:true});
+function tuck(){var f=$('locate'),m=document.querySelector('.mapcard');if(!f||!m)return;var a=f.getBoundingClientRect(),b=m.getBoundingClientRect();var hit=a.left<b.right+6&&b.left<a.right+6&&a.top<b.bottom+6&&b.top<a.bottom+6;f.classList.toggle('tuck',hit);}
+window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();tuck();});},{passive:true});
+window.addEventListener('resize',tuck);
+var tuckT=null;window.addEventListener('scroll',function(){clearTimeout(tuckT);tuckT=setTimeout(tuck,140);},{passive:true});
+window.addEventListener('load',tuck);setTimeout(tuck,0);setTimeout(tuck,600);
 
 renderAll();
 say('Sorted from '+st.label+'. Tap the red button when you are out in the city.');
