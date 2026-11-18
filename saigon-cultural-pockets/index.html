@@ -24,7 +24,7 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 html{font-size:calc(8px + .5rem)}
-body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1rem;line-height:1.45;padding-bottom:4.5rem}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:1rem;line-height:1.45;padding-bottom:1rem}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 a{color:var(--lantern)}
@@ -34,8 +34,8 @@ a{color:var(--lantern)}
 
 header.hero{padding-top:20px}
 .kicker{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
-h1{font-size:clamp(1.25rem,6.6vw,1.9rem);line-height:1.1;margin:6px 0 8px;font-weight:800;text-wrap:balance;letter-spacing:-.01em}
-.lede{color:var(--muted);margin:0;max-width:60ch}
+h1{font-size:clamp(1.25rem,6.6vw,1.9rem);line-height:1.1;margin:0 0 10px;font-weight:800;text-wrap:balance;letter-spacing:-.01em}
+.blankline{height:1.45em}
 
 .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}
 .tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 12px;text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -106,8 +106,7 @@ body.list .card{max-width:none}
 .tag.d{color:var(--day)} .tag.n{color:var(--night)} .tag.h{color:var(--host)}
 .empty{color:var(--muted);margin-top:24px}
 
-.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;max-width:calc(100% - 32px);white-space:nowrap;z-index:30;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.3);display:flex;gap:7px;align-items:center;transition:opacity .15s}
-.fab.tuck{opacity:0;pointer-events:none}
+.fab{position:static;width:max-content;max-width:100%;margin:0 0 12px;white-space:nowrap;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;display:flex;gap:7px;align-items:center}
 .fab .ring{flex:0 0 auto;width:9px;height:9px;border-radius:50%;border:2px solid currentColor}
 .fab.busy .ring{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.5);opacity:.4}}
@@ -137,6 +136,7 @@ dialog#sheet::backdrop{background:rgba(5,10,8,.6)}
 .act.wide{grid-column:1/-1}
 footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 @media (min-width:45rem){h1{font-size:2.4rem}.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.card{flex-basis:17.5rem}}
+@media (max-width:44.99rem){h1,.kicker{text-align:center}.fab{margin-left:auto;margin-right:auto}}
 @media (max-width:13rem){.tiles{grid-template-columns:1fr}}
 .sticky.nostick{position:static}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
@@ -145,9 +145,10 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 </head>
 <body>
 <header class="hero pad max">
-  <div class="kicker">District 1 · 84 spots · 13 groups</div>
   <h1>Saigon Funky Pockets</h1>
-  <p class="lede">Hidden cafes, stairwell bars and lantern lanes, grouped into pockets you can walk. Swipe a row, tap a card.</p>
+  <button class="fab" id="locate" type="button"><span class="ring" aria-hidden="true"></span><span id="fabText">Sort by my location</span></button>
+  <div class="kicker">District 1 · 84 spots · 13 groups</div>
+  <div class="blankline" aria-hidden="true"></div>
   <div class="tiles" id="tiles"></div>
   <div class="mapcard">
     <div class="mapstage"><div id="gmap"></div><svg id="map" viewBox="0 0 360 250" role="img" aria-label="Map of the pockets, numbered by distance from you"></svg><button class="mapme" id="mapMe" type="button" aria-label="Centre the map on my location" title="Centre the map on my location" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button></div>
@@ -195,8 +196,6 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
   Distances are straight lines; walking minutes add 30% and assume 75 m a minute. Two positions are approximate (bird cafe, Yossy Golf Bar).
   Photos load from the sites that published them and were matched by machine descriptions, so a few may be loose fits. Check hours before you go.
 </footer>
-
-<button class="fab" id="locate" type="button"><span class="ring" aria-hidden="true"></span><span id="fabText">Sort by my location</span></button>
 
 <dialog id="sheet" aria-labelledby="sName">
   <div class="grab" aria-hidden="true"></div>
@@ -586,11 +585,7 @@ function spy(){var secs=document.querySelectorAll('section.pocket'),on=null,i;
     var hit=c.getAttribute('data-k')===on;c.classList.toggle('on',hit);
     if(hit&&c.scrollIntoView&&c.parentNode.scrollWidth>c.parentNode.clientWidth){var p=c.parentNode;p.scrollLeft=c.offsetLeft-p.clientWidth/2+c.clientWidth/2;}
   });}
-function tuck(){var f=$('locate'),m=document.querySelector('.mapcard');if(!f||!m)return;var a=f.getBoundingClientRect(),b=m.getBoundingClientRect();var hit=a.left<b.right+6&&b.left<a.right+6&&a.top<b.bottom+6&&b.top<a.bottom+6;f.classList.toggle('tuck',hit);}
-window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();tuck();});},{passive:true});
-window.addEventListener('resize',tuck);
-var tuckT=null;window.addEventListener('scroll',function(){clearTimeout(tuckT);tuckT=setTimeout(tuck,140);},{passive:true});
-window.addEventListener('load',tuck);setTimeout(tuck,0);setTimeout(tuck,600);
+window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();});},{passive:true});
 
 renderAll();
 say('Sorted from '+st.label+'. Tap the red button when you are out in the city.');
