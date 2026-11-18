@@ -107,8 +107,8 @@ body.list .card{max-width:none}
 .empty{color:var(--muted);margin-top:24px}
 
 .fab{position:static;width:max-content;max-width:100%;margin:0 0 12px;white-space:nowrap;background:var(--lantern);color:var(--lantern-ink);border:0;border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;display:flex;gap:7px;align-items:center}
-.fab .ring{flex:0 0 auto;width:9px;height:9px;border-radius:50%;border:2px solid currentColor}
-.fab.busy .ring{animation:pulse 1s ease-in-out infinite}
+.fab svg{flex:0 0 auto}
+.fab.busy svg{animation:pulse 1s ease-in-out infinite}
 @keyframes pulse{50%{transform:scale(1.5);opacity:.4}}
 
 dialog#sheet{border:0;padding:0;background:var(--surface);color:var(--ink);width:100%;max-width:560px;margin:auto auto 0;border-radius:22px 22px 0 0;max-height:92dvh;overflow:auto}
@@ -140,15 +140,15 @@ footer{color:var(--muted);font-size:.82rem;margin-top:34px;max-width:62ch}
 @media (max-width:13rem){.tiles{grid-template-columns:1fr}}
 .sticky.nostick{position:static}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
-@media (prefers-reduced-motion:reduce){.fab.busy .ring,.mapme.busy svg{animation:none}}
+@media (prefers-reduced-motion:reduce){.fab.busy svg,.mapme.busy svg{animation:none}}
 </style>
 </head>
 <body>
 <header class="hero pad max">
   <h1>Saigon Funky Pockets</h1>
-  <button class="fab" id="locate" type="button"><span class="ring" aria-hidden="true"></span><span id="fabText">Sort by my location</span></button>
   <div class="kicker">District 1 · 84 spots · 13 groups</div>
   <div class="blankline" aria-hidden="true"></div>
+  <button class="fab" id="locate" type="button" aria-label="GPS: sort by my location"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg><span id="fabText">GPS</span></button>
   <div class="tiles" id="tiles"></div>
   <div class="mapcard">
     <div class="mapstage"><div id="gmap"></div><svg id="map" viewBox="0 0 360 250" role="img" aria-label="Map of the pockets, numbered by distance from you"></svg><button class="mapme" id="mapMe" type="button" aria-label="Centre the map on my location" title="Centre the map on my location" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg></button></div>
@@ -540,7 +540,6 @@ $('sheet').addEventListener('click',function(e){if(e.target===this)this.close();
 
 function setOrigin(p,label,real){st.origin=p;st.label=label;st.located=!!real;renderAll();
   say('Sorted from '+label+'. Nearest pocket first, nearest spot first in each row.');
-  $('fabText').textContent=real?'Update my location':'Sort by my location';
   window.scrollTo(0,0);}
 $('locate').addEventListener('click',function(){
   var fab=this;
@@ -588,7 +587,6 @@ function spy(){var secs=document.querySelectorAll('section.pocket'),on=null,i;
 window.addEventListener('scroll',function(){if(ticking)return;ticking=true;(window.requestAnimationFrame||setTimeout)(function(){ticking=false;spy();});},{passive:true});
 
 renderAll();
-say('Sorted from '+st.label+'. Tap the red button when you are out in the city.');
 </script>
 <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB7XRbgf43ZOC3IOHMSKzzxhezVG1P2fxs&v=weekly&loading=async&callback=gmReady"></script>
 </body>
