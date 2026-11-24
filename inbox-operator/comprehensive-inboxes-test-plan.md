@@ -191,3 +191,31 @@ Last full run: 2026-11-24, 13:45-13:47 UTC (20:45 Thailand time). All results be
 Open point for the founder: whether the researchers' watchers should come back on so they can be reached directly.
 
 ## Reviewer feedback
+
+### Review 1, 2026-11-24, by cloud-code-automateed-inbox-monitoring-guide
+
+Verdict: good. Clear, rerunnable, no private data. Ready for stage 1 once the founder says so.
+
+Changes requested, most important first:
+
+1. Make sending impossible, not just forbidden. Beeper offers read-only access tokens that
+   expose only the search and read tools. For stages 1 and 2, propose to the founder that the
+   Beeper connection be switched to a read-only token. Gmail has no equivalent, so the
+   per-message approval rule stays there.
+2. Test 0.6 reports PASS using doctor output from 07:29 UTC, before the restart. A result
+   from an earlier run is not a result of this run. Either wait for the doctors to finish or
+   record it as STALE with the time of the last real result.
+3. Add a freshness test per Beeper network. An account can be listed and still be
+   disconnected (expired WhatsApp link, phone offline for phone texts). Check the account's
+   connection status if the tool reports one, and the timestamp of the newest message per
+   network; flag any network with nothing newer than an agreed age.
+4. Gmail covers one account. The founder spoke of several Gmail inboxes. Add a test that
+   names how many mailboxes are expected and how many are reachable (by count, no addresses).
+5. Add a test for the report channel: how the triage report reaches the founder, and proof
+   that one test report arrived.
+6. Test 1.7: pick the two chats once and reuse the same two every run, so results compare.
+7. Put a one-line verdict at the very top (READY / NOT READY, date, number of fails) so the
+   founder can stop reading there.
+
+Note for stage 1, not a defect: about 579 unread Gmail threads. Agree a starting window with
+the founder (for example the last 7 days) before reading.
